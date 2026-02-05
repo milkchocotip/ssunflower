@@ -1,80 +1,241 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MILKKIT — submit</title>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script defer src="scripts.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-black text-white min-h-screen flex flex-col p-6">
+// MILKKIT FULL ENGINE — posts, comments, replies, edit, hide, delete, status menu
+// -------------------------------------------------------------
+// GLOBAL STATE
+// -------------------------------------------------------------
+let posts = JSON.parse(localStorage.getItem("milkkit_posts") || "[]");
+let currentEditId = null;
 
-  <!-- HEADER -->
-<nav class="w-full flex items-center justify-between p-4 bg-gray-900 shadow-lg mb-6">
-  <div><img src="logo.png" class="h-8 object-contain" /></div>
-  <input id="searchBar" type="text" placeholder="search" class="p-2 rounded-lg bg-gray-800 text-white w-1/2" />
-  <div class="flex items-center gap-6">
-    <a href="submit.html" class="text-base text-white hover:text-gray-300">+ create post</a>
+function savePosts() {
+  localStorage.setItem("milkkit_posts", JSON.stringify(posts));
+}
 
-    <!-- STATUS BUTTON -->
-    <div id="statusButton" class="relative w-8 h-8 rounded-full bg-gray-700 cursor-pointer ring-2 ring-green-500">
-      <div class="flex items-center justify-center w-full h-full text-xs">👤</div>
-      <div id="statusDot" class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-gray-900 bg-green-500"></div>
+// -------------------------------------------------------------
+// SUBMIT POST (new or edit)
+// -------------------------------------------------------------
+function submitPost() {
+  const titleEl = document.getElementById("posttitle");
+  const contentEl = document.getElementById("postcontent");
+  if (!titleEl || !contentEl) return;
 
-      <!-- STATUS MENU -->
-      <div id="statusMenu" class="hidden absolute top-10 right-0 bg-gray-800 border border-gray-700 rounded-lg p-3 flex flex-col text-sm space-y-1 min-w-[160px]">
-        <button data-status="online" class="flex items-center gap-2 text-left"><span class='w-2 h-2 rounded-full bg-green-500'></span> online</button>
-        <button data-status="away" class="flex items-center gap-2 text-left"><span class='w-2 h-2 rounded-full bg-yellow-400'></span> away</button>
-        <button data-status="dnd" class="flex items-center gap-2 text-left"><span class='w-2 h-2 rounded-full bg-red-600'></span> do not disturb</button>
-        <button data-status="offline" class="flex items-center gap-2 text-left"><span class='w-2 h-2 rounded-full bg-gray-500'></span> offline</button>
+  const title = titleEl.value.trim();
+  const content = contentEl.value.trim();
+
+  if (!title || !content) {
+    alert("fill everything out");
+    return;
+  }
+
+  const rendered = marked.parse(content);
+
+  if (currentEditId !== null) {
+    posts[currentEditId].title = title;
+    posts[currentEditId].raw = content;
+    posts[currentEditId].content = rendered;
+    savePosts();
+    window.location.href = "home.html";
+    return;
+  }
+
+  posts.unshift({
+    title,
+    raw: content,
+    content: rendered,
+    comments: [],
+    hidden: false,
+    time: Date.now()
+  });
+
+  savePosts();
+  window.location.href = "home.html";
+}
+
+// -------------------------------------------------------------
+// EDIT MODE LOADER (submit.html?edit=ID)
+// -------------------------------------------------------------
+function checkEditMode() {
+  const params = new URLSearchParams(window.location.search);
+  if (!params.has("edit")) return;
+
+  currentEditId = Number(params.get("edit"));
+  const post = posts[currentEditId];
+  if (!post) return;
+
+  const titleEl = document.getElementById("posttitle");
+  const contentEl = document.getElementById("postcontent");
+  if (!titleEl || !contentEl) return;
+
+  titleEl.value = post.title;
+  contentEl.value = post.raw;
+}
+
+// -------------------------------------------------------------
+// RENDER POSTS ON HOME
+// -------------------------------------------------------------
+function renderPosts() {
+  const feed = document.getElementById("feed");
+  if (!feed) return;
+
+  feed.innerHTML = "";
+
+  posts.forEach((post, i) => {
+    if (post.hidden) return;
+
+    const card = document.createElement("div");
+    card.className = "bg-gray-900 p-4 rounded-xl border border-gray-800";
+
+    card.innerHTML = `
+      <div class="flex justify-between items-start">
+        <h3 class="text-xl font-bold">${post.title}</h3>
+        <div class="relative">
+          <button onclick="toggleMenu(${i})" class="px-2">⋯</button>
+          <div id="menu-${i}" class="hidden absolute right-0 top-6 bg-gray-800 border border-gray-700 rounded p-2 text-sm">
+            <button onclick="startEdit(${i})" class="block w-full text-left">edit</button>
+            <button onclick="hidePost(${i})" class="block w-full text-left">hide</button>
+            <button onclick="askDelete(${i})" class="block w-full text-left">delete</button>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</nav>
+      <div class="prose prose-invert mt-3">${post.content}</div>
 
-  <!-- heading -->
-<div class="mt-10"></div>
-<div class="w-full flex justify-center mb-4">
-  <h2 class="text-xl font-semibold">✦ submit a post ✦</h2>
-</div>
+      <div class="mt-4">
+        <input id="comment-${i}" class="w-full p-2 rounded bg-gray-800 border border-gray-700 text-white" placeholder="add a comment..." />
+        <button onclick="submitComment(${i})" class="mt-2 bg-white text-black px-3 py-1 rounded">comment</button>
+      </div>
 
-<!-- title input -->
-<div class="w-full flex justify-center">
-  <input
-    id="posttitle"
-    type="text"
-    placeholder="title"
-    class="w-full max-w-xl p-3 mb-4 bg-gray-900 border border-gray-700 rounded-lg text-white"
-  />
-</div>
+      <div id="comments-${i}" class="mt-4 space-y-3"></div>
+    `;
 
-<!-- formatting buttons -->
-<div class="w-full max-w-xl mx-auto flex gap-2 mb-3">
-  <button onclick="applyFormat('bold')" class="px-3 py-1 bg-gray-800 rounded">b</button>
-  <button onclick="applyFormat('italic')" class="px-3 py-1 bg-gray-800 rounded">i</button>
-  <button onclick="applyFormat('h1')" class="px-3 py-1 bg-gray-800 rounded">h1</button>
-  <button onclick="applyFormat('bullet')" class="px-3 py-1 bg-gray-800 rounded">•</button>
-</div>
+    feed.appendChild(card);
+    renderComments(i);
+  });
+}
 
-<!-- markdown editor -->
-<div class="w-full flex justify-center">
-  <textarea
-    id="postcontent"
-    class="w-full max-w-xl h-64 p-3 bg-gray-900 border border-gray-700 rounded-lg text-white resize-none mb-6"
-    placeholder="write your post..."
-  ></textarea>
-</div>
+// -------------------------------------------------------------
+// THREE DOTS MENU
+// -------------------------------------------------------------
+function toggleMenu(i) {
+  const menu = document.getElementById(`menu-${i}`);
+  if (menu) menu.classList.toggle("hidden");
+}
 
-<!-- submit button -->
-<div class="w-full flex justify-center">
-  <button
-    onclick="submitPost()"
-    class="w-full max-w-xl py-3 bg-white text-black rounded-lg font-semibold text-lg hover:bg-gray-200"
-  >
-    submit
-  </button>
-</div>
+// -------------------------------------------------------------
+// POST ACTIONS
+// -------------------------------------------------------------
+function startEdit(i) {
+  window.location.href = `submit.html?edit=${i}`;
+}
 
-</body>
-</html>
+function hidePost(i) {
+  posts[i].hidden = true;
+  savePosts();
+  renderPosts();
+}
+
+let deleteTarget = null;
+
+function askDelete(i) {
+  deleteTarget = i;
+  const modal = document.getElementById("deleteModal");
+  if (modal) modal.classList.remove("hidden");
+}
+
+function confirmDelete() {
+  if (deleteTarget === null) return;
+  posts.splice(deleteTarget, 1);
+  savePosts();
+  const modal = document.getElementById("deleteModal");
+  if (modal) modal.classList.add("hidden");
+  renderPosts();
+}
+
+function cancelDelete() {
+  const modal = document.getElementById("deleteModal");
+  if (modal) modal.classList.add("hidden");
+}
+
+// -------------------------------------------------------------
+// COMMENTS
+// -------------------------------------------------------------
+function submitComment(i) {
+  const field = document.getElementById(`comment-${i}`);
+  if (!field) return;
+
+  const text = field.value.trim();
+  if (!text) return;
+
+  posts[i].comments.push({ raw: text, content: marked.parse(text), replies: [] });
+  savePosts();
+  field.value = "";
+  renderComments(i);
+}
+
+function renderComments(i) {
+  const wrap = document.getElementById(`comments-${i}`);
+  if (!wrap) return;
+
+  wrap.innerHTML = "";
+
+  posts[i].comments.forEach((c, ci) => {
+    const div = document.createElement("div");
+    div.className = "bg-gray-800 p-3 rounded-lg";
+
+    div.innerHTML = `
+      <div class="prose prose-invert">${c.content}</div>
+
+      <div class="mt-2">
+        <input id="reply-${i}-${ci}" class="w-full p-2 rounded bg-gray-700 border border-gray-600 text-white" placeholder="reply..." />
+        <button onclick="submitReply(${i}, ${ci})" class="mt-2 bg-white text-black px-3 py-1 rounded">reply</button>
+      </div>
+
+      <div id="replies-${i}-${ci}" class="mt-3 ml-4 border-l border-gray-600 pl-4 space-y-2"></div>
+    `;
+
+    wrap.appendChild(div);
+    renderReplies(i, ci);
+  });
+}
+
+// -------------------------------------------------------------
+// REPLIES
+// -------------------------------------------------------------
+function submitReply(i, ci) {
+  const field = document.getElementById(`reply-${i}-${ci}`);
+  if (!field) return;
+
+  const text = field.value.trim();
+  if (!text) return;
+
+  posts[i].comments[ci].replies.push({ raw: text, content: marked.parse(text) });
+  savePosts();
+  field.value = "";
+  renderReplies(i, ci);
+}
+
+function renderReplies(i, ci) {
+  const wrap = document.getElementById(`replies-${i}-${ci}`);
+  if (!wrap) return;
+
+  wrap.innerHTML = "";
+  posts[i].comments[ci].replies.forEach(r => {
+    const div = document.createElement("div");
+    div.className = "prose prose-invert bg-gray-700 p-2 rounded";
+    div.innerHTML = r.content;
+    wrap.appendChild(div);
+  });
+}
+
+// -------------------------------------------------------------
+// FORMAT BUTTONS
+// -------------------------------------------------------------
+function applyFormat(type) {
+  const box = document.getElementById("postcontent");
+  if (!box) return;
+
+  let text = box.value;
+
+  if (type === "bold") text += " **bold**";
+  if (type === "italic") text += " *italic*";
+  if (type === "h1") text += "\n# heading";
+  if (type === "bullet") text += "\n• item";
+
+  box.value = text
