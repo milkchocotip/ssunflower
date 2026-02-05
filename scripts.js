@@ -160,10 +160,35 @@ function cancelEditPost(i) {
 }
 
 // =============================================================
+// COMMENT UI STATE
+// =============================================================
+let openCommentIndex = null;
+
+// =============================================================
 // COMMENTS (FULLY FIXED)
 // =============================================================
 function submitComment(i) {
   const field = document.getElementById(`comment-${i}`);
+  if (!field || !field.value.trim()) return;
+
+  posts[i].comments.push({
+    author: currentUser,
+    raw: field.value,
+    content: marked.parse(field.value),
+    time: Date.now()
+  });
+
+  savePosts();
+
+  // keep this comment thread open
+  openCommentIndex = i;
+
+  renderPosts();
+
+  setTimeout(() => {
+    document.getElementById(`comment-box-${i}`)?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, 50);
+}`);
   if (!field || !field.value.trim()) return;
 
   posts[i].comments.push({
@@ -205,11 +230,19 @@ function cancelEditComment(p, c) {
 function deleteComment(p, c) {
   posts[p].comments.splice(c, 1);
   savePosts();
+
+  // keep thread open after delete
+  openCommentIndex = p;
+
   renderPosts();
 }
 
-// =============================================================
-// RENDER
+function toggleCommentBox(i) {
+  openCommentIndex = openCommentIndex === i ? null : i;
+  renderPosts();
+}
+
+// =========================================================
 // =============================================================
 function renderPosts() {
   const feed = document.getElementById("feed");
@@ -249,12 +282,12 @@ function renderPosts() {
       </div>
       <div class="prose prose-invert my-3 whitespace-pre-wrap">${post.content}</div>
       <div class="flex items-center justify-between text-gray-400 pt-2">
-        <button onclick="document.getElementById('comment-box-${i}')?.classList.toggle('hidden')" class="flex items-center gap-1 hover:text-white">${icons.comment}<span class="text-sm">${post.comments.length}</span></button>
+        <button onclick="toggleCommentBox(${i})" class="flex items-center gap-1 hover:text-white">${icons.comment}<span class="text-sm">${post.comments.length}</span></button>
         <button onclick="toggleLike(${i})" class="flex items-center gap-1 ${post.likes.includes(currentUser) ? 'text-white' : 'hover:text-white'}">${icons.like}<span class="text-sm">${post.likes.length}</span></button>
         <button onclick="toggleBookmark(${i})" class="flex items-center ${post.bookmarks.includes(currentUser) ? 'text-white' : 'hover:text-white'}">${icons.bookmark}</button>
         <button onclick="navigator.clipboard.writeText(location.href)" class="hover:text-white">${icons.share}</button>
       </div>
-      <div id="comment-box-${i}" class="hidden mt-3 space-y-3">
+      <div id="comment-box-${i}" class="${openCommentIndex === i ? '' : 'hidden'} mt-3 space-y-3">
         <div class="space-y-2">
           ${post.comments.map((c, ci) => `
             <div class="text-sm border border-gray-800 rounded p-2">
