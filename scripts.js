@@ -284,6 +284,65 @@ function applyFormat(type) {
   if (type === "bullet") text += "\n- item";
   box.value = text;
 }
+// -------------------------------------------------------------
+// STATUS DROPDOWN (for profile icon)
+// -------------------------------------------------------------
+document.addEventListener("DOMContentLoaded", () => {
+  const statusButton = document.getElementById("statusButton");
+  const statusMenu = document.getElementById("statusMenu");
+  const statusDot = document.getElementById("statusDot");
+
+  // open / close menu on click
+  if (statusButton) {
+    statusButton.addEventListener("click", (e) => {
+      e.stopPropagation();
+      statusMenu?.classList.toggle("hidden");
+    });
+  }
+
+  // update status when clicked in menu
+  document.querySelectorAll("#statusMenu button[data-status]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const status = btn.dataset.status;
+
+      // save status
+      localStorage.setItem("milkkit_status", status);
+
+      // update color
+      const colors = {
+        online: "bg-green-500",
+        away: "bg-yellow-400",
+        dnd: "bg-red-600",
+        offline: "bg-gray-500"
+      };
+
+      statusDot.className =
+        "absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-gray-900 " +
+        colors[status];
+
+      statusMenu.classList.add("hidden");
+    });
+  });
+
+  // restore saved status
+  const savedStatus = localStorage.getItem("milkkit_status");
+  if (savedStatus && statusDot) {
+    const colors = {
+      online: "bg-green-500",
+      away: "bg-yellow-400",
+      dnd: "bg-red-600",
+      offline: "bg-gray-500"
+    };
+    statusDot.className =
+      "absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-gray-900 " +
+      colors[savedStatus];
+  }
+
+  // close dropdown when clicking outside
+  document.addEventListener("click", () => {
+    statusMenu?.classList.add("hidden");
+  });
+});
 
 // -------------------------------------------------------------
 // BOOT
