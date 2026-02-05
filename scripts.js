@@ -147,6 +147,60 @@ function submitInlinePost() {
 }
 
 // =============================================================
+// RENDER POSTS (FEED)
+// =============================================================
+function renderPosts() {
+  const feed = document.getElementById("feed");
+  if (!feed) return;
+
+  feed.innerHTML = "";
+
+  posts.forEach((post, i) => {
+    post.likes ||= [];
+    post.bookmarks ||= [];
+    post.comments ||= [];
+
+    const card = document.createElement("div");
+    card.className = "bg-gray-900 p-4 rounded-xl border border-gray-800";
+
+    card.innerHTML = `
+      <div onclick="clickPost('${post.id}')" class="cursor-pointer">
+        <div class="text-xl font-bold hover:underline">${post.title}</div>
+        <p class="text-xs text-gray-400">
+          m/${post.author} • ${formatTime(post.time)}
+        </p>
+      </div>
+
+      <div class="my-3 text-sm text-gray-200 leading-snug max-h-24 overflow-hidden relative">
+        ${IS_SINGLE_POST ? post.content : getPreview(post.content)}
+      </div>
+
+      <div class="flex justify-between pt-2 text-gray-400">
+        <button class="flex items-center gap-1">
+          ${icons.comment}<span class="text-xs">${post.comments.length}</span>
+        </button>
+
+        <button onclick="toggleLike(${i})"
+          class="flex items-center gap-1 ${post.likes.includes(currentUser) ? "text-white" : ""}">
+          ${icons.like}<span class="text-xs">${post.likes.length}</span>
+        </button>
+
+        <button onclick="toggleBookmark(${i})">
+          ${post.bookmarks.includes(currentUser) ? icons.bookmarkFilled : icons.bookmark}
+        </button>
+
+        <button onclick="navigator.clipboard.writeText(location.origin + '/post.html?id=${post.id}')">
+          ${icons.share}
+        </button>
+      </div>
+    `;
+
+    feed.appendChild(card);
+  });
+}
+
+
+// =============================================================
 // BOOT
 // =============================================================
 document.addEventListener("DOMContentLoaded", () => {
