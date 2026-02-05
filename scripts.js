@@ -3,11 +3,21 @@
 // =============================================================
 
 // -------------------------------------------------------------
-// AUTH
+// AUTH — FIXED (works with file://, live server, and hosting)
 // -------------------------------------------------------------
 const currentUser = localStorage.getItem("milkkit_user");
 
-if (!currentUser && !location.pathname.includes("index.html") && !location.pathname.includes("create.html")) {
+// get the actual page name reliably
+const page = location.pathname.split("/").pop();
+
+// pages allowed without login
+const isPublicPage =
+  page === "" ||           // root
+  page === "index" ||
+  page === "index.html" ||
+  page === "create.html";
+
+if (!currentUser && !isPublicPage) {
   window.location.href = "index.html";
 }
 
