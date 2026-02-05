@@ -1,4 +1,16 @@
-// MILKKIT FULL ENGINE — posts, comments, replies, edit, hide, delete, status menu
+// =============================================================
+// MILKKIT FULL ENGINE — with users, ownership, logout
+// =============================================================
+
+// -------------------------------------------------------------
+// AUTH
+// -------------------------------------------------------------
+const currentUser = localStorage.getItem("milkkit_user");
+
+if (!currentUser && !location.pathname.includes("index.html") && !location.pathname.includes("create.html")) {
+  window.location.href = "index.html";
+}
+
 // -------------------------------------------------------------
 // GLOBAL STATE
 // -------------------------------------------------------------
@@ -7,6 +19,14 @@ let currentEditId = null;
 
 function savePosts() {
   localStorage.setItem("milkkit_posts", JSON.stringify(posts));
+}
+
+// -------------------------------------------------------------
+// LOGOUT
+// -------------------------------------------------------------
+function logout() {
+  localStorage.removeItem("milkkit_user");
+  window.location.href = "index.html";
 }
 
 // -------------------------------------------------------------
@@ -19,15 +39,12 @@ function submitPost() {
 
   const title = titleEl.value.trim();
   const content = contentEl.value.trim();
-
-  if (!title || !content) {
-    alert("fill everything out");
-    return;
-  }
+  if (!title || !content) return alert("fill everything out");
 
   const rendered = marked.parse(content);
 
   if (currentEditId !== null) {
+    if (posts[currentEditId].author !== currentUser) return;
     posts[currentEditId].title = title;
     posts[currentEditId].raw = content;
     posts[currentEditId].content = rendered;
@@ -40,6 +57,7 @@ function submitPost() {
     title,
     raw: content,
     content: rendered,
+    author: currentUser,
     comments: [],
     hidden: false,
     time: Date.now()
@@ -50,7 +68,7 @@ function submitPost() {
 }
 
 // -------------------------------------------------------------
-// EDIT MODE LOADER (submit.html?edit=ID)
+// EDIT MODE
 // -------------------------------------------------------------
 function checkEditMode() {
   const params = new URLSearchParams(window.location.search);
@@ -58,7 +76,10 @@ function checkEditMode() {
 
   currentEditId = Number(params.get("edit"));
   const post = posts[currentEditId];
-  if (!post) return;
+  if (!post || post.author !== currentUser) {
+    window.location.href = "home.html";
+    return;
+  }
 
   const titleEl = document.getElementById("posttitle");
   const contentEl = document.getElementById("postcontent");
@@ -69,7 +90,7 @@ function checkEditMode() {
 }
 
 // -------------------------------------------------------------
-// RENDER POSTS ON HOME
+// RENDER POSTS
 // -------------------------------------------------------------
 function renderPosts() {
   const feed = document.getElementById("feed");
@@ -80,12 +101,18 @@ function renderPosts() {
   posts.forEach((post, i) => {
     if (post.hidden) return;
 
+    const isOwner = post.author === currentUser;
     const card = document.createElement("div");
     card.className = "bg-gray-900 p-4 rounded-xl border border-gray-800";
 
     card.innerHTML = `
       <div class="flex justify-between items-start">
-        <h3 class="text-xl font-bold">${post.title}</h3>
+        <div>
+          <h3 class="text-xl font-bold">${post.title}</h3>
+          <p class="text-xs text-gray-400">m/${post.author}</p>
+        </div>
+
+        ${isOwner ? `
         <div class="relative">
           <button onclick="toggleMenu(${i})" class="px-2">⋯</button>
           <div id="menu-${i}" class="hidden absolute right-0 top-6 bg-gray-800 border border-gray-700 rounded p-2 text-sm">
@@ -93,8 +120,9 @@ function renderPosts() {
             <button onclick="hidePost(${i})" class="block w-full text-left">hide</button>
             <button onclick="askDelete(${i})" class="block w-full text-left">delete</button>
           </div>
-        </div>
+        </div>` : ""}
       </div>
+
       <div class="prose prose-invert mt-3">${post.content}</div>
 
       <div class="mt-4">
@@ -111,21 +139,24 @@ function renderPosts() {
 }
 
 // -------------------------------------------------------------
-// THREE DOTS MENU
+// MENU
 // -------------------------------------------------------------
 function toggleMenu(i) {
+  document.querySelectorAll("[id^='menu-']").forEach(m => m.classList.add("hidden"));
   const menu = document.getElementById(`menu-${i}`);
   if (menu) menu.classList.toggle("hidden");
 }
 
 // -------------------------------------------------------------
-// POST ACTIONS
+// POST ACTIONS (OWNER ONLY)
 // -------------------------------------------------------------
 function startEdit(i) {
+  if (posts[i].author !== currentUser) return;
   window.location.href = `submit.html?edit=${i}`;
 }
 
 function hidePost(i) {
+  if (posts[i].author !== currentUser) return;
   posts[i].hidden = true;
   savePosts();
   renderPosts();
@@ -134,36 +165,40 @@ function hidePost(i) {
 let deleteTarget = null;
 
 function askDelete(i) {
+  if (posts[i].author !== currentUser) return;
   deleteTarget = i;
-  const modal = document.getElementById("deleteModal");
-  if (modal) modal.classList.remove("hidden");
+  document.getElementById("deleteModal")?.classList.remove("hidden");
 }
 
 function confirmDelete() {
   if (deleteTarget === null) return;
   posts.splice(deleteTarget, 1);
   savePosts();
-  const modal = document.getElementById("deleteModal");
-  if (modal) modal.classList.add("hidden");
+  document.getElementById("deleteModal")?.classList.add("hidden");
+  deleteTarget = null;
   renderPosts();
 }
 
 function cancelDelete() {
-  const modal = document.getElementById("deleteModal");
-  if (modal) modal.classList.add("hidden");
+  document.getElementById("deleteModal")?.classList.add("hidden");
+  deleteTarget = null;
 }
 
 // -------------------------------------------------------------
-// COMMENTS
+// COMMENTS & REPLIES
 // -------------------------------------------------------------
 function submitComment(i) {
   const field = document.getElementById(`comment-${i}`);
   if (!field) return;
-
   const text = field.value.trim();
   if (!text) return;
 
-  posts[i].comments.push({ raw: text, content: marked.parse(text), replies: [] });
+  posts[i].comments.push({
+    author: currentUser,
+    content: marked.parse(text),
+    replies: []
+  });
+
   savePosts();
   field.value = "";
   renderComments(i);
@@ -180,6 +215,7 @@ function renderComments(i) {
     div.className = "bg-gray-800 p-3 rounded-lg";
 
     div.innerHTML = `
+      <p class="text-xs text-gray-400 mb-1">m/${c.author}</p>
       <div class="prose prose-invert">${c.content}</div>
 
       <div class="mt-2">
@@ -195,17 +231,17 @@ function renderComments(i) {
   });
 }
 
-// -------------------------------------------------------------
-// REPLIES
-// -------------------------------------------------------------
 function submitReply(i, ci) {
   const field = document.getElementById(`reply-${i}-${ci}`);
   if (!field) return;
-
   const text = field.value.trim();
   if (!text) return;
 
-  posts[i].comments[ci].replies.push({ raw: text, content: marked.parse(text) });
+  posts[i].comments[ci].replies.push({
+    author: currentUser,
+    content: marked.parse(text)
+  });
+
   savePosts();
   field.value = "";
   renderReplies(i, ci);
@@ -219,7 +255,7 @@ function renderReplies(i, ci) {
   posts[i].comments[ci].replies.forEach(r => {
     const div = document.createElement("div");
     div.className = "prose prose-invert bg-gray-700 p-2 rounded";
-    div.innerHTML = r.content;
+    div.innerHTML = `<p class="text-xs text-gray-400">m/${r.author}</p>${r.content}`;
     wrap.appendChild(div);
   });
 }
@@ -232,10 +268,20 @@ function applyFormat(type) {
   if (!box) return;
 
   let text = box.value;
-
   if (type === "bold") text += " **bold**";
   if (type === "italic") text += " *italic*";
   if (type === "h1") text += "\n# heading";
-  if (type === "bullet") text += "\n• item";
+  if (type === "bullet") text += "\n- item";
+  box.value = text;
+}
 
-  box.value = text
+// -------------------------------------------------------------
+// BOOT
+// -------------------------------------------------------------
+document.addEventListener("DOMContentLoaded", () => {
+  renderPosts();
+  checkEditMode();
+
+  document.getElementById("confirmDelete")?.addEventListener("click", confirmDelete);
+  document.getElementById("cancelDelete")?.addEventListener("click", cancelDelete);
+});
