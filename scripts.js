@@ -125,11 +125,11 @@ function togglePostMenu(i) {
 }
 
 function deletePost(i) {
-  if (!confirm("delete this post?")) return;
-  posts.splice(i, 1);
-  savePosts();
-  renderPosts();
+  pendingDeleteIndex = i;
+  const modal = document.getElementById('deleteConfirm');
+  modal?.classList.remove('hidden');
 }
+
 
 function startEditPost(i) {
   const post = posts[i];
@@ -263,6 +263,24 @@ function renderPosts() {
 
     feed.appendChild(card);
   });
+}
+
+// =============================================================
+// DELETE CONFIRM MODAL STATE
+// =============================================================
+let pendingDeleteIndex = null;
+
+function confirmDelete(yes) {
+  const modal = document.getElementById('deleteConfirm');
+  modal?.classList.add('hidden');
+
+  if (yes && pendingDeleteIndex !== null) {
+    posts.splice(pendingDeleteIndex, 1);
+    savePosts();
+    renderPosts();
+  }
+
+  pendingDeleteIndex = null;
 }
 
 // =============================================================
