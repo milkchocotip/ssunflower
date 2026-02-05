@@ -14,14 +14,12 @@
   <!-- NAVBAR -->
   <nav class="w-full flex flex-wrap items-center justify-between gap-4 p-4 bg-gray-900 shadow-lg">
 
-<!-- LOGO -->
-<div class="flex-shrink-0">
-  <a href="home.html">
-    <img src="logo.png" class="h-20 object-contain cursor-pointer" />
-  </a>
-</div>
-
-
+    <!-- LOGO -->
+    <div class="flex-shrink-0">
+      <a href="home.html">
+        <img src="logo.png" class="h-20 object-contain cursor-pointer" />
+      </a>
+    </div>
 
     <!-- SEARCH -->
     <input
@@ -35,13 +33,12 @@
     <div class="flex items-center gap-4 flex-wrap">
 
       <!-- OPEN COMPOSER (Twitter-style) -->
-<button
-  onclick="openComposer()"
-  class="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-white font-medium shadow-sm transition"
->
-  + create post
-</button>
-
+      <button
+        onclick="openComposer()"
+        class="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-white font-medium shadow-sm transition"
+      >
+        + create post
+      </button>
 
       <!-- STATUS BUTTON -->
       <div
@@ -78,7 +75,6 @@
             <span class="w-2 h-2 rounded-full bg-gray-500"></span> offline
           </button>
 
-          <!-- CLEAN LOGOUT BUTTON (no dot, no indicator) -->
           <button
             onclick="logout()"
             class="text-left text-red-400 hover:text-red-300 pt-2 border-t border-gray-700 mt-1"
@@ -90,11 +86,44 @@
     </div>
   </nav>
 
-  <!-- FEED -->
+
+
+  <!-- ============================= -->
+  <!-- LEFT SIDEBAR (ADDED HERE) -->
+  <!-- ============================= -->
+  <aside class="hidden md:flex flex-col w-64 p-6 border-r border-gray-800 bg-black/30 fixed top-[100px] left-0 bottom-0 z-30">
+
+    <!-- PROFILE CARD -->
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 mb-6">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center text-sm">
+          👤
+        </div>
+        <div>
+          <p id="sidebarUser" class="text-sm font-semibold"></p>
+          <p class="text-xs text-green-400">online</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- NAV LINKS -->
+    <nav class="flex flex-col gap-4 text-sm">
+      <button onclick="goHome()" class="text-gray-300 hover:text-white transition">home</button>
+      <button onclick="goMyPosts()" class="text-gray-300 hover:text-white transition">my posts</button>
+      <button onclick="goSaved()" class="text-gray-300 hover:text-white transition">saved</button>
+    </nav>
+
+  </aside>
+
+
+
+  <!-- FEED (shifted right for sidebar) -->
   <div
     id="feed"
-    class="flex-1 p-4 sm:p-6 w-full space-y-6 overflow-auto"
+    class="flex-1 p-4 sm:p-6 w-full space-y-6 overflow-auto md:ml-72"
   ></div>
+
+
 
   <!-- DELETE MODAL -->
   <div
@@ -132,7 +161,6 @@
         <button onclick="closeComposer()" class="text-gray-400 hover:text-white text-lg">✕</button>
       </div>
 
-      <!-- TITLE -->
       <input
         id="inlineTitle"
         type="text"
@@ -140,14 +168,12 @@
         class="w-full p-3 mb-3 bg-gray-800 border border-gray-700 rounded-lg text-white"
       />
 
-      <!-- BODY -->
       <textarea
         id="inlineContent"
         placeholder="write your post..."
         class="w-full min-h-[140px] p-3 bg-gray-800 border border-gray-700 rounded-lg text-white resize-none mb-3"
       ></textarea>
 
-      <!-- FORMAT BUTTONS -->
       <div class="flex gap-2 mb-4">
         <button onclick="applyInlineFormat('bold')" class="px-3 py-1 bg-gray-700 rounded">b</button>
         <button onclick="applyInlineFormat('italic')" class="px-3 py-1 bg-gray-700 rounded">i</button>
@@ -155,7 +181,6 @@
         <button onclick="applyInlineFormat('bullet')" class="px-3 py-1 bg-gray-700 rounded">•</button>
       </div>
 
-      <!-- POST BUTTON -->
       <button
         onclick="submitInlinePost()"
         class="w-full py-3 bg-white text-black rounded-lg font-semibold text-lg hover:bg-gray-200"
@@ -166,5 +191,19 @@
   </div>
 
   <script src="scripts.js"></script>
+
+  <script>
+    // Fill sidebar username
+    document.addEventListener("DOMContentLoaded", () => {
+      const u = localStorage.getItem("milkkit_user");
+      if (u) document.getElementById("sidebarUser").innerText = `m/${u}`;
+    });
+
+    // Sidebar navigation logic
+    function goHome() { window.location.href = "home.html"; }
+    function goMyPosts() { window.location.href = "home.html?filter=myposts"; }
+    function goSaved() { window.location.href = "home.html?filter=saved"; }
+  </script>
+
 </body>
 </html>
