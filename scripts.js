@@ -80,9 +80,10 @@ function getPreview(html, lines = 3) {
   const text = el.innerText.trim();
   const split = text.split("\n").filter(Boolean);
 
-  if (split.length <= lines) return html;
-  return split.slice(0, lines).join("\n") + "…";
+  return split.slice(0, lines).join(" ") + (split.length > lines ? "…" : "");
 }
+
+
 
 // =============================================================
 // STATUS
@@ -232,7 +233,8 @@ function renderPosts() {
         </div>` : ``}
       </div>
 
-      <div class="prose prose-invert my-3 whitespace-pre-wrap">
+      <div class="my-3 text-sm text-gray-200 leading-snug max-h-24 overflow-hidden relative">
+
         ${
           IS_SINGLE_POST
             ? post.content
@@ -247,7 +249,9 @@ function renderPosts() {
       </div>
 
       <div class="flex justify-between pt-2">
-        <button onclick="toggleCommentBox(${i})" class="${openCommentIndex === i ? "text-white" : "text-gray-400 hover:text-white"}">
+<button onclick="toggleCommentBox(${i})"
+  class="${IS_SINGLE_POST || openCommentIndex === i ? "text-white" : "text-gray-400 hover:text-white"}">
+
           ${icons.comment} ${post.comments.length}
         </button>
 
@@ -264,7 +268,7 @@ function renderPosts() {
         </button>
       </div>
 
-      <div class="${openCommentIndex === i ? "" : "hidden"} mt-3">
+      <div class="${IS_SINGLE_POST || openCommentIndex === i ? "" : "hidden"} mt-3">
         ${post.comments.map((c, ci) => `
           <div class="border border-gray-800 rounded p-2 mb-2">
             <div class="flex justify-between text-xs text-gray-400">
