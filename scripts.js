@@ -1,5 +1,5 @@
 // =============================================================
-// MILKKIT FULL ENGINE — INLINE POST VERSION (UPDATED)
+// MILKKIT FULL ENGINE — INLINE POST VERSION (UPDATED + TIMESTAMPS + LIKES)
 // =============================================================
 
 // -------------------------------------------------------------
@@ -10,7 +10,6 @@ const currentUser = localStorage.getItem("milkkit_user");
 // get page name
 const page = location.pathname.split("/").pop();
 
-// pages allowed without login
 const isPublicPage =
   page === "" ||
   page === "index" ||
@@ -32,6 +31,27 @@ function savePosts() {
 }
 
 // -------------------------------------------------------------
+// TIMESTAMP FORMATTER
+// -------------------------------------------------------------
+function formatTime(time) {
+  const now = Date.now();
+  const diff = now - time;
+
+  const sec = Math.floor(diff / 1000);
+  const min = Math.floor(sec / 60);
+  const hr = Math.floor(min / 60);
+  const day = Math.floor(hr / 24);
+
+  if (sec < 5) return "just now";
+  if (sec < 60) return sec + "s ago";
+  if (min < 60) return min + "m ago";
+  if (hr < 24) return hr + "h ago";
+  if (day < 7) return day + "d ago";
+
+  return new Date(time).toLocaleDateString();
+}
+
+// -------------------------------------------------------------
 // LOGOUT
 // -------------------------------------------------------------
 function logout() {
@@ -40,7 +60,7 @@ function logout() {
 }
 
 // -------------------------------------------------------------
-// OPEN/CLOSE INLINE COMPOSER
+// COMPOSER OPEN/CLOSE
 // -------------------------------------------------------------
 function openComposer() {
   document.getElementById("composerOverlay").classList.remove("hidden");
@@ -51,7 +71,7 @@ function closeComposer() {
 }
 
 // -------------------------------------------------------------
-// SUBMIT POST (legacy submit.html support — still works)
+// FULL PAGE SUBMIT (legacy)
 // -------------------------------------------------------------
 function submitPost() {
   const titleEl = document.getElementById("posttitle");
@@ -66,9 +86,11 @@ function submitPost() {
 
   if (currentEditId !== null) {
     if (posts[currentEditId].author !== currentUser) return;
+
     posts[currentEditId].title = title;
     posts[currentEditId].raw = content;
     posts[currentEditId].content = rendered;
+
     savePosts();
     window.location.href = "home.html";
     return;
@@ -81,6 +103,7 @@ function submitPost() {
     author: currentUser,
     comments: [],
     hidden: false,
+    likes: [],        // << NEW
     time: Date.now()
   });
 
@@ -89,7 +112,7 @@ function submitPost() {
 }
 
 // -------------------------------------------------------------
-// INLINE POST SUBMISSION (Twitter-style composer)
+// INLINE POST SUBMISSION
 // -------------------------------------------------------------
 function submitInlinePost() {
   const title = document.getElementById("inlineTitle")?.value.trim();
@@ -106,22 +129,21 @@ function submitInlinePost() {
     author: currentUser,
     comments: [],
     hidden: false,
+    likes: [],       // << NEW
     time: Date.now()
   });
 
   savePosts();
   renderPosts();
 
-  // clear fields
   document.getElementById("inlineTitle").value = "";
   document.getElementById("inlineContent").value = "";
 
-  // IMPORTANT: close composer after posting
   closeComposer();
 }
 
 // -------------------------------------------------------------
-// INLINE FORMAT BUTTONS
+// INLINE FORMAT HELPERS
 // -------------------------------------------------------------
 function applyInlineFormat(type) {
   const box = document.getElementById("inlineContent");
@@ -138,7 +160,7 @@ function applyInlineFormat(type) {
 }
 
 // -------------------------------------------------------------
-// EDIT MODE (for submit.html)
+// EDIT MODE
 // -------------------------------------------------------------
 function checkEditMode() {
   const params = new URLSearchParams(window.location.search);
@@ -146,6 +168,7 @@ function checkEditMode() {
 
   currentEditId = Number(params.get("edit"));
   const post = posts[currentEditId];
+
   if (!post || post.author !== currentUser) {
     window.location.href = "home.html";
     return;
@@ -153,10 +176,27 @@ function checkEditMode() {
 
   const titleEl = document.getElementById("posttitle");
   const contentEl = document.getElementById("postcontent");
+
   if (!titleEl || !contentEl) return;
 
   titleEl.value = post.title;
   contentEl.value = post.raw;
+}
+
+// -------------------------------------------------------------
+// LIKE BUTTON (🥛)
+// -------------------------------------------------------------
+function toggleLike(i) {
+  const post = posts[i];
+  if (!post.likes) post.likes = [];
+
+  const index = post.likes.indexOf(currentUser);
+
+  if (index === -1) post.likes.push(currentUser);
+  else post.likes.splice(index, 1);
+
+  savePosts();
+  renderPosts();
 }
 
 // -------------------------------------------------------------
@@ -168,11 +208,8 @@ function renderPosts() {
 
   feed.innerHTML = "";
 
-  // Blank-state message
   if (posts.length === 0) {
-    feed.innerHTML = `
-      <p class="text-gray-500 text-center mt-10">no posts yet — be the first ✦</p>
-    `;
+    feed.innerHTML = `<p class="text-gray-500 text-center mt-10">no posts yet — be the first ✦</p>`;
     return;
   }
 
@@ -180,6 +217,8 @@ function renderPosts() {
     if (post.hidden) return;
 
     const isOwner = post.author === currentUser;
+    const liked = post.likes?.includes(currentUser);
+
     const card = document.createElement("div");
     card.className = "bg-gray-900 p-4 rounded-xl border border-gray-800";
 
@@ -187,7 +226,7 @@ function renderPosts() {
       <div class="flex justify-between items-start">
         <div>
           <h3 class="text-xl font-bold">${post.title}</h3>
-          <p class="text-xs text-gray-400">m/${post.author}</p>
+          <p class="text-xs text-gray-400">m/${post.author} • ${formatTime(post.time)}</p>
         </div>
 
         ${isOwner ? `
@@ -203,6 +242,19 @@ function renderPosts() {
 
       <div class="prose prose-invert mt-3">${post.content}</div>
 
+      <!-- LIKE BUTTON -->
+      <div class="mt-3 flex items-center gap-3">
+        <button
+          onclick="toggleLike(${i})"
+          class="text-xl ${liked ? "opacity-100" : "opacity-40"} hover:opacity-100 transition"
+        >
+          🥛
+        </button>
+
+        <span class="text-sm text-gray-400">${post.likes?.length || 0} likes</span>
+      </div>
+
+      <!-- COMMENTS -->
       <div class="mt-4">
         <input id="comment-${i}" class="w-full p-2 rounded bg-gray-800 border border-gray-700 text-white" placeholder="add a comment..." />
         <button onclick="submitComment(${i})" class="mt-2 bg-white text-black px-3 py-1 rounded">comment</button>
@@ -221,8 +273,8 @@ function renderPosts() {
 // -------------------------------------------------------------
 function toggleMenu(i) {
   document.querySelectorAll("[id^='menu-']").forEach(m => m.classList.add("hidden"));
-  const menu = document.getElementById(`menu-${i}`);
-  if (menu) menu.classList.toggle("hidden");
+  const m = document.getElementById(`menu-${i}`);
+  if (m) m.classList.toggle("hidden");
 }
 
 // -------------------------------------------------------------
@@ -263,11 +315,12 @@ function cancelDelete() {
 }
 
 // -------------------------------------------------------------
-// COMMENTS & REPLIES
+// COMMENTS / REPLIES
 // -------------------------------------------------------------
 function submitComment(i) {
   const field = document.getElementById(`comment-${i}`);
   if (!field) return;
+
   const text = field.value.trim();
   if (!text) return;
 
@@ -312,6 +365,7 @@ function renderComments(i) {
 function submitReply(i, ci) {
   const field = document.getElementById(`reply-${i}-${ci}`);
   if (!field) return;
+
   const text = field.value.trim();
   if (!text) return;
 
@@ -330,6 +384,7 @@ function renderReplies(i, ci) {
   if (!wrap) return;
 
   wrap.innerHTML = "";
+
   posts[i].comments[ci].replies.forEach(r => {
     const div = document.createElement("div");
     div.className = "prose prose-invert bg-gray-700 p-2 rounded";
