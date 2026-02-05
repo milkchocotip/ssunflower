@@ -24,41 +24,45 @@
   <script src="scripts.js"></script>
 
   <!-- SINGLE POST BOOTSTRAP -->
-  <script>
-    const params = new URLSearchParams(location.search);
-    const postId = params.get("id");
+<!-- SINGLE POST BOOTSTRAP -->
+<script>
+  const params = new URLSearchParams(location.search);
+  const postId = params.get("id");
 
-    // guard
-    if (!postId) {
-      document.getElementById("feed").innerHTML = "<p class='text-gray-400'>post not found</p>";
+  if (!postId) {
+    document.getElementById("feed").innerHTML =
+      "<p class='text-gray-400'>post not found</p>";
+  }
+
+  // store original renderer
+  const _renderPosts = window.renderPosts;
+
+  // override renderer to show ONE post
+  window.renderPosts = function () {
+    const feed = document.getElementById("feed");
+    if (!feed) return;
+
+    const allPosts = JSON.parse(
+      localStorage.getItem("milkkit_posts") || "[]"
+    );
+
+    const post = allPosts.find(p => p.id === postId);
+
+    if (!post) {
+      feed.innerHTML = "<p class='text-gray-400'>post not found</p>";
+      return;
     }
 
-    // override renderer to show ONE post
-    const _renderPosts = window.renderPosts;
+    // lock global posts to this post ONLY
+    window.posts = allPosts.filter(p => p.id === postId);
 
-    window.renderPosts = function () {
-      const feed = document.getElementById("feed");
-      if (!feed) return;
+    _renderPosts();
+  };
 
-      const allPosts = JSON.parse(localStorage.getItem("milkkit_posts") || "[]");
-      const post = allPosts.find(p => p.id === postId);
+  document.addEventListener("DOMContentLoaded", window.renderPosts);
+</script>
 
-      if (!post) {
-        feed.innerHTML = "<p class='text-gray-400'>post not found</p>";
-        return;
-      }
 
-      // temporarily replace global posts
-      const originalPosts = window.posts;
-      window.posts = [post];
-
-      _renderPosts();
-
-      window.posts = originalPosts;
-    };
-
-    document.addEventListener("DOMContentLoaded", window.renderPosts);
-  </script>
 
 </body>
 </html>
