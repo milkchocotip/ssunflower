@@ -35,6 +35,11 @@ const icons = {
 };
 
 // =============================================================
+// MARKDOWN CONFIG
+// =============================================================
+marked.setOptions({ breaks: true });
+
+// =============================================================
 // TIME
 // =============================================================
 function formatTime(time) {
@@ -207,7 +212,7 @@ function renderPosts() {
             </div>
           </div>` : ``}
         </div>
-        <div class="prose prose-invert my-3">${post.content}</div>
+        <div class="prose prose-invert my-3 whitespace-pre-wrap">${post.content}</div>
         <div class="flex justify-around text-gray-400">
           <button onclick="toggleLike(${i})">${icons.like} ${post.likes.length}</button>
           <button onclick="toggleBookmark(${i})">${icons.bookmark}</button>
