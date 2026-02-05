@@ -29,6 +29,40 @@ function saveNotifs() {
 }
 
 // =============================================================
+// ICONS (WHITE SVG)
+// =============================================================
+const icons = {
+  comment: `
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5"
+      fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+      <path stroke-linecap="round" stroke-linejoin="round"
+        d="M7 8h10M7 12h6m-2 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+    </svg>
+  `,
+  like: `
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5"
+      fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+      <path stroke-linecap="round" stroke-linejoin="round"
+        d="M5 15l7-7 7 7" />
+    </svg>
+  `,
+  bookmark: `
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5"
+      fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+      <path stroke-linecap="round" stroke-linejoin="round"
+        d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z" />
+    </svg>
+  `,
+  share: `
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5"
+      fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+      <path stroke-linecap="round" stroke-linejoin="round"
+        d="M15 8l4-4m0 0l-4-4m4 4H9" />
+    </svg>
+  `
+};
+
+// =============================================================
 // TIME FORMATTER
 // =============================================================
 function formatTime(time) {
@@ -53,62 +87,6 @@ function formatTime(time) {
 function logout() {
   localStorage.removeItem("milkkit_user");
   window.location.href = "index.html";
-}
-
-// =============================================================
-// NOTIFICATIONS
-// =============================================================
-function addNotification(type, message) {
-  notifications.unshift({
-    type,
-    message,
-    time: Date.now(),
-    read: false
-  });
-
-  saveNotifs();
-  updateNotifDot();
-  renderNotifications();
-}
-
-function updateNotifDot() {
-  const dot = document.getElementById("notifDot");
-  if (!dot) return;
-  dot.classList.toggle("hidden", !notifications.some(n => !n.read));
-}
-
-function toggleNotifications() {
-  const menu = document.getElementById("notifMenu");
-  if (!menu) return;
-
-  menu.classList.toggle("hidden");
-
-  if (!menu.classList.contains("hidden")) {
-    notifications.forEach(n => (n.read = true));
-    saveNotifs();
-    updateNotifDot();
-    renderNotifications();
-  }
-}
-
-function renderNotifications() {
-  const menu = document.getElementById("notifMenu");
-  if (!menu) return;
-
-  if (!notifications.length) {
-    menu.innerHTML = `<p class="text-gray-400 text-center py-4">no notifications yet ✦</p>`;
-    return;
-  }
-
-  menu.innerHTML = notifications
-    .map(
-      n => `
-    <div class="p-2 rounded bg-gray-800 border border-gray-700">
-      <p>${n.message}</p>
-      <p class="text-xs text-gray-500">${formatTime(n.time)}</p>
-    </div>`
-    )
-    .join("");
 }
 
 // =============================================================
@@ -194,19 +172,40 @@ function renderPosts() {
 
     card.innerHTML = `
       <h3 class="text-xl font-bold">${post.title}</h3>
-      <p class="text-xs text-gray-400 mb-2">
+      <p class="text-xs text-gray-400 mb-3">
         m/${post.author} • ${formatTime(post.time)}
       </p>
 
       <div class="prose prose-invert mb-4">${post.content}</div>
 
-      <button onclick="document.getElementById('comment-box-${i}').classList.toggle('hidden')" class="text-gray-400 hover:text-white">
-        💬 comment
-      </button>
+      <div class="flex items-center justify-around text-gray-400">
 
-      <div id="comment-box-${i}" class="hidden mt-3">
-        <input id="comment-${i}" class="w-full p-2 bg-gray-800 border border-gray-700 rounded text-white" placeholder="add a comment…" />
-        <button onclick="submitComment(${i})" class="mt-2 bg-white text-black px-3 py-1 rounded">
+        <button onclick="document.getElementById('comment-box-${i}').classList.toggle('hidden')"
+          class="hover:text-white transition" aria-label="comment">
+          ${icons.comment}
+        </button>
+
+        <button class="hover:text-white transition" aria-label="like">
+          ${icons.like}
+        </button>
+
+        <button class="hover:text-white transition" aria-label="bookmark">
+          ${icons.bookmark}
+        </button>
+
+        <button onclick="navigator.clipboard.writeText(location.href + '#post-${i}')"
+          class="hover:text-white transition" aria-label="share">
+          ${icons.share}
+        </button>
+
+      </div>
+
+      <div id="comment-box-${i}" class="hidden mt-4">
+        <input id="comment-${i}"
+          class="w-full p-2 bg-gray-800 border border-gray-700 rounded text-white"
+          placeholder="add a comment…" />
+        <button onclick="submitComment(${i})"
+          class="mt-2 bg-white text-black px-3 py-1 rounded">
           reply
         </button>
       </div>
@@ -290,6 +289,4 @@ document.addEventListener("DOMContentLoaded", () => {
 // =============================================================
 document.addEventListener("DOMContentLoaded", () => {
   renderPosts();
-  renderNotifications();
-  updateNotifDot();
 });
