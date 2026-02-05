@@ -20,6 +20,21 @@ if (!currentUser && !isPublicPage) {
 const IS_SINGLE_POST = location.pathname.includes("post.html");
 
 // =============================================================
+// ICONS
+// =============================================================
+const icons = {
+  comment: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M7 8h10M7 12h6m-2 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>`,
+
+  like: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M5 15l7-7 7 7"/></svg>`,
+
+  bookmark: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/></svg>`,
+
+  bookmarkFilled: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M6 2a2 2 0 00-2 2v18l8-5 8 5V4a2 2 0 00-2-2H6z"/></svg>`,
+
+  share: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M15 8l4-4m0 0l-4-4m4 4H9"/></svg>`
+};
+
+// =============================================================
 // GLOBAL STATE
 // =============================================================
 var posts = JSON.parse(localStorage.getItem("milkkit_posts") || "[]");
@@ -69,6 +84,29 @@ function getPreview(html, lines = 3) {
   const text = el.innerText.trim();
   const split = text.split("\n").filter(Boolean);
   return split.slice(0, lines).join(" ") + (split.length > lines ? "…" : "");
+}
+
+// =============================================================
+// INTERACTIONS
+// =============================================================
+function toggleLike(i) {
+  const likes = posts[i].likes;
+  const idx = likes.indexOf(currentUser);
+  idx === -1 ? likes.push(currentUser) : likes.splice(idx, 1);
+  savePosts();
+  renderPosts();
+}
+
+function toggleBookmark(i) {
+  const b = posts[i].bookmarks;
+  const idx = b.indexOf(currentUser);
+  idx === -1 ? b.push(currentUser) : b.splice(idx, 1);
+  savePosts();
+  renderPosts();
+}
+
+function scrollToComments(i) {
+  document.getElementById(`comment-${i}`)?.scrollIntoView({ behavior: "smooth" });
 }
 
 // =============================================================
@@ -166,19 +204,21 @@ function renderPosts() {
   feed.innerHTML = "";
 
   posts.forEach((post, i) => {
+    post.likes ||= [];
+    post.bookmarks ||= [];
+    post.comments ||= [];
+
     const card = document.createElement("div");
     card.className = "bg-gray-900 p-4 rounded-xl border border-gray-800";
 
     card.innerHTML = `
-      <div class="flex justify-between">
-        <div>
-          <a href="post.html?id=${post.id}" class="text-xl font-bold hover:underline">
-            ${post.title}
-          </a>
-          <p class="text-xs text-gray-400">
-            m/${post.author} • ${formatTime(post.time)}
-          </p>
-        </div>
+      <div>
+        <a href="post.html?id=${post.id}" class="text-xl font-bold hover:underline">
+          ${post.title}
+        </a>
+        <p class="text-xs text-gray-400">
+          m/${post.author} • ${formatTime(post.time)}
+        </p>
       </div>
 
       <div class="my-3 text-sm text-gray-200 leading-snug max-h-24 overflow-hidden relative">
@@ -200,6 +240,30 @@ function renderPosts() {
         }
       </div>
 
+      <!-- INTERACTION BAR -->
+      <div class="flex justify-between pt-2 text-gray-400">
+
+        <button onclick="scrollToComments(${i})" class="flex items-center gap-1 hover:text-white">
+          ${icons.comment}
+          <span class="text-xs">${post.comments.length}</span>
+        </button>
+
+        <button onclick="toggleLike(${i})" class="flex items-center gap-1 hover:text-white ${post.likes.includes(currentUser) ? "text-white" : ""}">
+          ${icons.like}
+          <span class="text-xs">${post.likes.length}</span>
+        </button>
+
+        <button onclick="toggleBookmark(${i})" class="hover:text-white">
+          ${post.bookmarks.includes(currentUser) ? icons.bookmarkFilled : icons.bookmark}
+        </button>
+
+        <button onclick="navigator.clipboard.writeText(location.origin + '/post.html?id=${post.id}')" class="hover:text-white">
+          ${icons.share}
+        </button>
+
+      </div>
+
+      <!-- COMMENTS -->
       <div class="${IS_SINGLE_POST ? "" : "hidden"} mt-4">
         ${renderCommentTree(post.comments, i)}
 
