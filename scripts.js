@@ -29,7 +29,7 @@ function saveNotifs() {
 }
 
 // =============================================================
-// ICONS (WHITE SVG)
+// ICONS
 // =============================================================
 const icons = {
   comment: `
@@ -114,6 +114,7 @@ function submitInlinePost() {
     time: Date.now(),
     comments: [],
     likes: [],
+    bookmarks: [],
     hidden: false
   });
 
@@ -136,6 +137,25 @@ function applyInlineFormat(type) {
 }
 
 // =============================================================
+// INTERACTIONS
+// =============================================================
+function toggleLike(i) {
+  const likes = posts[i].likes;
+  const idx = likes.indexOf(currentUser);
+  idx === -1 ? likes.push(currentUser) : likes.splice(idx, 1);
+  savePosts();
+  renderPosts();
+}
+
+function toggleBookmark(i) {
+  const bm = posts[i].bookmarks;
+  const idx = bm.indexOf(currentUser);
+  idx === -1 ? bm.push(currentUser) : bm.splice(idx, 1);
+  savePosts();
+  renderPosts();
+}
+
+// =============================================================
 // COMMENTS
 // =============================================================
 function submitComment(i) {
@@ -155,26 +175,27 @@ function submitComment(i) {
 }
 
 // =============================================================
-// POSTS RENDER
+// POSTS RENDER (WITH FILTERS)
 // =============================================================
 function renderPosts() {
   const feed = document.getElementById("feed");
   if (!feed) return;
 
+  const params = new URLSearchParams(location.search);
+  const filter = params.get("filter");
+
   feed.innerHTML = "";
 
   posts.forEach((post, i) => {
     if (post.hidden) return;
-
-    post.likes ??= [];
-    post.bookmarks ??= [];
+    if (filter === "myposts" && post.author !== currentUser) return;
+    if (filter === "saved" && !post.bookmarks.includes(currentUser)) return;
 
     const liked = post.likes.includes(currentUser);
     const bookmarked = post.bookmarks.includes(currentUser);
 
     const card = document.createElement("div");
     card.className = "bg-gray-900 p-4 rounded-xl border border-gray-800";
-    card.id = `post-${i}`;
 
     card.innerHTML = `
       <h3 class="text-xl font-bold">${post.title}</h3>
@@ -185,60 +206,27 @@ function renderPosts() {
       <div class="prose prose-invert mb-4">${post.content}</div>
 
       <div class="flex items-center justify-around text-gray-400">
-
-        <!-- COMMENT -->
-        <button
-          onclick="document.getElementById('comment-box-${i}').classList.toggle('hidden')"
-          class="hover:text-white transition"
-          aria-label="comment"
-        >
+        <button onclick="document.getElementById('comment-box-${i}').classList.toggle('hidden')">
           ${icons.comment}
         </button>
 
-        <!-- LIKE (MILK + COUNT) -->
-        <button
-          onclick="toggleLike(${i})"
-          class="flex items-center gap-1 transition ${
-            liked ? "text-white" : "hover:text-white"
-          }"
-          aria-label="like"
-        >
-          ${icons.like}
-          <span class="text-sm">${post.likes.length}</span>
+        <button onclick="toggleLike(${i})" class="flex items-center gap-1 ${liked ? "text-white" : ""}">
+          ${icons.like}<span>${post.likes.length}</span>
         </button>
 
-        <!-- BOOKMARK (FILLS WHITE WHEN SAVED) -->
-        <button
-          onclick="toggleBookmark(${i})"
-          class="transition ${
-            bookmarked ? "text-white" : "hover:text-white"
-          }"
-          aria-label="bookmark"
-        >
+        <button onclick="toggleBookmark(${i})" class="${bookmarked ? "text-white" : ""}">
           ${icons.bookmark}
         </button>
 
-        <!-- SHARE -->
-        <button
-          onclick="navigator.clipboard.writeText(location.href + '#post-${i}')"
-          class="hover:text-white transition"
-          aria-label="share"
-        >
+        <button onclick="navigator.clipboard.writeText(location.href + '#post-${i}')">
           ${icons.share}
         </button>
-
       </div>
 
       <div id="comment-box-${i}" class="hidden mt-4">
-        <input
-          id="comment-${i}"
-          class="w-full p-2 bg-gray-800 border border-gray-700 rounded text-white"
-          placeholder="add a comment…"
-        />
-        <button
-          onclick="submitComment(${i})"
-          class="mt-2 bg-white text-black px-3 py-1 rounded"
-        >
+        <input id="comment-${i}" class="w-full p-2 bg-gray-800 border border-gray-700 rounded" />
+        <button onclick="submitComment(${i})"
+          class="mt-2 bg-white text-black px-3 py-1 rounded">
           reply
         </button>
       </div>
@@ -249,77 +237,6 @@ function renderPosts() {
 }
 
 // =============================================================
-// SIDEBAR STATUS SYNC
-// =============================================================
-const statusTextColors = {
-  online: "text-green-400",
-  away: "text-yellow-400",
-  dnd: "text-red-500",
-  offline: "text-gray-400"
-};
-
-function syncSidebarStatus(status) {
-  const el = document.getElementById("sidebarStatus");
-  if (!el) return;
-
-  el.textContent = status;
-  el.className = "text-xs " + statusTextColors[status];
-}
-
-// =============================================================
-// STATUS MENU
-// =============================================================
-document.addEventListener("DOMContentLoaded", () => {
-  const statusButton = document.getElementById("statusButton");
-  const statusMenu = document.getElementById("statusMenu");
-  const statusDot = document.getElementById("statusDot");
-
-  const dotColors = {
-    online: "bg-green-500",
-    away: "bg-yellow-400",
-    dnd: "bg-red-600",
-    offline: "bg-gray-500"
-  };
-
-  const ringColors = {
-    online: "ring-green-500",
-    away: "ring-yellow-400",
-    dnd: "ring-red-600",
-    offline: "ring-gray-500"
-  };
-
-  statusButton?.addEventListener("click", e => {
-    e.stopPropagation();
-    statusMenu.classList.toggle("hidden");
-  });
-
-  document.querySelectorAll("#statusMenu button[data-status]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const status = btn.dataset.status;
-      localStorage.setItem("milkkit_status", status);
-
-      statusDot.className =
-        "absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-gray-900 " +
-        dotColors[status];
-
-      statusButton.className =
-        "relative w-8 h-8 rounded-full bg-gray-700 cursor-pointer ring-2 " +
-        ringColors[status];
-
-      syncSidebarStatus(status);
-      statusMenu.classList.add("hidden");
-    });
-  });
-
-  const savedStatus = localStorage.getItem("milkkit_status");
-  if (savedStatus) syncSidebarStatus(savedStatus);
-
-  document.addEventListener("click", () => statusMenu.classList.add("hidden"));
-});
-
-// =============================================================
 // BOOT
 // =============================================================
-document.addEventListener("DOMContentLoaded", () => {
-  renderPosts();
-});
+document.addEventListener("DOMContentLoaded", renderPosts);
