@@ -1,5 +1,5 @@
 // =============================================================
-// MILKKIT FULL ENGINE — INLINE POST VERSION (UPDATED + TIMESTAMPS + LIKES)
+// MILKKIT FULL ENGINE — INLINE POST VERSION (UPDATED + TIMESTAMPS + SVG ICON BAR)
 // =============================================================
 
 // -------------------------------------------------------------
@@ -31,7 +31,7 @@ function savePosts() {
 }
 
 // -------------------------------------------------------------
-// TIMESTAMP FORMATTER
+// TIME FORMATTER
 // -------------------------------------------------------------
 function formatTime(time) {
   const now = Date.now();
@@ -71,7 +71,7 @@ function closeComposer() {
 }
 
 // -------------------------------------------------------------
-// FULL PAGE SUBMIT (legacy)
+// POST SUBMISSION (legacy)
 // -------------------------------------------------------------
 function submitPost() {
   const titleEl = document.getElementById("posttitle");
@@ -103,8 +103,8 @@ function submitPost() {
     author: currentUser,
     comments: [],
     hidden: false,
-    likes: [],        // << NEW
-    time: Date.now()
+    likes: [],
+    time: Date.now(),
   });
 
   savePosts();
@@ -129,8 +129,8 @@ function submitInlinePost() {
     author: currentUser,
     comments: [],
     hidden: false,
-    likes: [],       // << NEW
-    time: Date.now()
+    likes: [],
+    time: Date.now(),
   });
 
   savePosts();
@@ -184,7 +184,7 @@ function checkEditMode() {
 }
 
 // -------------------------------------------------------------
-// LIKE BUTTON (🥛)
+// LIKE BUTTON (milk bottle SVG)
 // -------------------------------------------------------------
 function toggleLike(i) {
   const post = posts[i];
@@ -197,6 +197,30 @@ function toggleLike(i) {
 
   savePosts();
   renderPosts();
+}
+
+// -------------------------------------------------------------
+// COMMENT BOX OPEN
+// -------------------------------------------------------------
+function focusComment(i) {
+  document.getElementById(`comment-box-${i}`).classList.remove("hidden");
+  document.getElementById(`comment-${i}`).focus();
+}
+
+// -------------------------------------------------------------
+// SHARE
+// -------------------------------------------------------------
+function sharePost(i) {
+  const url = location.origin + "/home.html#post-" + i;
+  navigator.clipboard.writeText(url);
+  alert("link copied");
+}
+
+// -------------------------------------------------------------
+// BOOKMARK
+// -------------------------------------------------------------
+function bookmarkPost(i) {
+  alert("saved.");
 }
 
 // -------------------------------------------------------------
@@ -221,6 +245,7 @@ function renderPosts() {
 
     const card = document.createElement("div");
     card.className = "bg-gray-900 p-4 rounded-xl border border-gray-800";
+    card.id = `post-${i}`;
 
     card.innerHTML = `
       <div class="flex justify-between items-start">
@@ -242,22 +267,49 @@ function renderPosts() {
 
       <div class="prose prose-invert mt-3">${post.content}</div>
 
-      <!-- LIKE BUTTON -->
-      <div class="mt-3 flex items-center gap-3">
-        <button
-          onclick="toggleLike(${i})"
-          class="text-xl ${liked ? "opacity-100" : "opacity-40"} hover:opacity-100 transition"
-        >
-          🥛
+      <!-- ACTION BAR -->
+      <div class="mt-5 flex items-center justify-between text-gray-400 text-sm select-none">
+
+        <!-- COMMENT -->
+        <button onclick="focusComment(${i})" class="flex items-center gap-1 hover:text-white transition">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M4 6h16M4 12h10M4 18h6" />
+          </svg>
         </button>
 
-        <span class="text-sm text-gray-400">${post.likes?.length || 0} likes</span>
+        <!-- LIKE (milk bottle) -->
+        <button onclick="toggleLike(${i})" class="flex items-center gap-1 hover:text-white transition">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 ${liked ? "text-white" : "text-gray-500"}" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path d="M9 2h6v4l1 2v13a3 3 0 01-3 3h-2a3 3 0 01-3-3V8l1-2V2z"/>
+          </svg>
+          <span>${post.likes.length || 0}</span>
+        </button>
+
+        <!-- BOOKMARK -->
+        <button onclick="bookmarkPost(${i})" class="hover:text-white transition">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M6 3h12v18l-6-4-6 4V3z"/>
+          </svg>
+        </button>
+
+        <!-- SHARE -->
+        <button onclick="sharePost(${i})" class="hover:text-white transition">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M4 12v8h16v-8M12 4v12M7 9l5-5 5 5"/>
+          </svg>
+        </button>
+
       </div>
 
-      <!-- COMMENTS -->
-      <div class="mt-4">
-        <input id="comment-${i}" class="w-full p-2 rounded bg-gray-800 border border-gray-700 text-white" placeholder="add a comment..." />
-        <button onclick="submitComment(${i})" class="mt-2 bg-white text-black px-3 py-1 rounded">comment</button>
+      <!-- COMMENT BOX -->
+      <div id="comment-box-${i}" class="hidden mt-3">
+        <input id="comment-${i}" class="w-full p-2 rounded bg-gray-800 border border-gray-700 text-white"
+          placeholder="add a comment..." />
+        <button onclick="submitComment(${i})"
+          class="mt-2 bg-white text-black px-3 py-1 rounded">reply</button>
       </div>
 
       <div id="comments-${i}" class="mt-4 space-y-3"></div>
@@ -278,7 +330,7 @@ function toggleMenu(i) {
 }
 
 // -------------------------------------------------------------
-// POST ACTIONS
+// DELETE / HIDE / EDIT
 // -------------------------------------------------------------
 function startEdit(i) {
   if (posts[i].author !== currentUser) return;
@@ -315,7 +367,7 @@ function cancelDelete() {
 }
 
 // -------------------------------------------------------------
-// COMMENTS / REPLIES
+// COMMENTS & REPLIES
 // -------------------------------------------------------------
 function submitComment(i) {
   const field = document.getElementById(`comment-${i}`);
