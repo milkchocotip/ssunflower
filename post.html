@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MILKKIT — Post</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-black text-white min-h-screen flex flex-col">
+
+  <!-- TOP BAR -->
+  <div class="w-full p-4 border-b border-gray-800 flex items-center justify-between">
+    <a href="home.html" class="text-sm text-gray-400 hover:text-white">← back</a>
+    <span class="text-sm text-gray-500">post</span>
+  </div>
+
+  <!-- POST CONTAINER -->
+  <main id="feed" class="flex-1 p-4 sm:p-6 max-w-3xl mx-auto w-full"></main>
+
+  <!-- LOAD MAIN SCRIPT -->
+  <script src="scripts.js"></script>
+
+  <!-- SINGLE POST BOOTSTRAP -->
+  <script>
+    const params = new URLSearchParams(location.search);
+    const postId = params.get("id");
+
+    // guard
+    if (!postId) {
+      document.getElementById("feed").innerHTML = "<p class='text-gray-400'>post not found</p>";
+    }
+
+    // override renderer to show ONE post
+    const _renderPosts = window.renderPosts;
+
+    window.renderPosts = function () {
+      const feed = document.getElementById("feed");
+      if (!feed) return;
+
+      const allPosts = JSON.parse(localStorage.getItem("milkkit_posts") || "[]");
+      const post = allPosts.find(p => p.id === postId);
+
+      if (!post) {
+        feed.innerHTML = "<p class='text-gray-400'>post not found</p>";
+        return;
+      }
+
+      // temporarily replace global posts
+      const originalPosts = window.posts;
+      window.posts = [post];
+
+      _renderPosts();
+
+      window.posts = originalPosts;
+    };
+
+    document.addEventListener("DOMContentLoaded", window.renderPosts);
+  </script>
+
+</body>
+</html>
