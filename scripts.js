@@ -24,13 +24,9 @@ const IS_SINGLE_POST = location.pathname.includes("post.html");
 // =============================================================
 const icons = {
   comment: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M7 8h10M7 12h6m-2 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>`,
-
   like: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M5 15l7-7 7 7"/></svg>`,
-
   bookmark: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/></svg>`,
-
   bookmarkFilled: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M6 2a2 2 0 00-2 2v18l8-5 8 5V4a2 2 0 00-2-2H6z"/></svg>`,
-
   share: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M15 8l4-4m0 0l-4-4m4 4H9"/></svg>`
 };
 
@@ -53,6 +49,30 @@ function uid() {
 function logout() {
   localStorage.removeItem("milkkit_user");
   window.location.href = "index.html";
+}
+
+// =============================================================
+// STATUS
+// =============================================================
+function applyStatus(status) {
+  localStorage.setItem("milkkit_status", status);
+
+  const dot = document.getElementById("statusDot");
+  const sidebar = document.getElementById("sidebarStatus");
+
+  const colors = {
+    online: "bg-green-500",
+    away: "bg-yellow-400",
+    dnd: "bg-red-600",
+    offline: "bg-gray-500"
+  };
+
+  if (dot) {
+    dot.className =
+      `absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-black ${colors[status]}`;
+  }
+
+  if (sidebar) sidebar.textContent = status;
 }
 
 // =============================================================
@@ -107,6 +127,13 @@ function toggleBookmark(i) {
 
 function scrollToComments(i) {
   document.getElementById(`comment-${i}`)?.scrollIntoView({ behavior: "smooth" });
+}
+
+// =============================================================
+// CLICK POST
+// =============================================================
+function clickPost(id) {
+  window.location.href = `post.html?id=${id}`;
 }
 
 // =============================================================
@@ -168,23 +195,13 @@ function renderCommentTree(comments, postIndex, depth = 0) {
         ${c.content}
       </div>
 
-      <button
-        onclick="toggleReply('${c.id}')"
-        class="text-xs text-gray-400 hover:text-white mt-1"
-      >
+      <button onclick="toggleReply('${c.id}')" class="text-xs text-gray-400 hover:text-white mt-1">
         reply
       </button>
 
       <div id="reply-box-${c.id}" class="hidden mt-2">
-        <input
-          id="reply-${c.id}"
-          class="w-full p-2 bg-gray-800 rounded text-sm"
-          placeholder="reply…"
-        />
-        <button
-          onclick="submitComment(${postIndex}, '${c.id}')"
-          class="bg-white text-black px-2 py-1 rounded mt-1 text-xs"
-        >
+        <input id="reply-${c.id}" class="w-full p-2 bg-gray-800 rounded text-sm" placeholder="reply…" />
+        <button onclick="submitComment(${postIndex}, '${c.id}')" class="bg-white text-black px-2 py-1 rounded mt-1 text-xs">
           post
         </button>
       </div>
@@ -212,45 +229,27 @@ function renderPosts() {
     card.className = "bg-gray-900 p-4 rounded-xl border border-gray-800";
 
     card.innerHTML = `
-      <div>
-        <a href="post.html?id=${post.id}" class="text-xl font-bold hover:underline">
-          ${post.title}
-        </a>
+      <div onclick="clickPost('${post.id}')" class="cursor-pointer">
+        <div class="text-xl font-bold hover:underline">${post.title}</div>
         <p class="text-xs text-gray-400">
           m/${post.author} • ${formatTime(post.time)}
         </p>
       </div>
 
       <div class="my-3 text-sm text-gray-200 leading-snug max-h-24 overflow-hidden relative">
-        ${
-          IS_SINGLE_POST
-            ? post.content
-            : getPreview(post.content)
-        }
-
-        ${
-          !IS_SINGLE_POST && post.content.split("\n").length > 3
-            ? `
-              <div class="absolute bottom-0 left-0 w-full h-6 bg-gradient-to-t from-gray-900 to-transparent pointer-events-none"></div>
-              <a href="post.html?id=${post.id}" class="text-xs text-gray-400 hover:text-white block mt-2 relative z-10">
-                see more…
-              </a>
-            `
-            : ""
-        }
+        ${IS_SINGLE_POST ? post.content : getPreview(post.content)}
+        ${!IS_SINGLE_POST && post.content.split("\n").length > 3 ? `
+          <div class="absolute bottom-0 left-0 w-full h-6 bg-gradient-to-t from-gray-900 to-transparent pointer-events-none"></div>
+        ` : ""}
       </div>
 
-      <!-- INTERACTION BAR -->
       <div class="flex justify-between pt-2 text-gray-400">
-
         <button onclick="scrollToComments(${i})" class="flex items-center gap-1 hover:text-white">
-          ${icons.comment}
-          <span class="text-xs">${post.comments.length}</span>
+          ${icons.comment}<span class="text-xs">${post.comments.length}</span>
         </button>
 
         <button onclick="toggleLike(${i})" class="flex items-center gap-1 hover:text-white ${post.likes.includes(currentUser) ? "text-white" : ""}">
-          ${icons.like}
-          <span class="text-xs">${post.likes.length}</span>
+          ${icons.like}<span class="text-xs">${post.likes.length}</span>
         </button>
 
         <button onclick="toggleBookmark(${i})" class="hover:text-white">
@@ -260,22 +259,13 @@ function renderPosts() {
         <button onclick="navigator.clipboard.writeText(location.origin + '/post.html?id=${post.id}')" class="hover:text-white">
           ${icons.share}
         </button>
-
       </div>
 
-      <!-- COMMENTS -->
       <div class="${IS_SINGLE_POST ? "" : "hidden"} mt-4">
         ${renderCommentTree(post.comments, i)}
 
-        <input
-          id="comment-${i}"
-          class="w-full p-2 bg-gray-800 rounded mt-3"
-          placeholder="add a comment…"
-        />
-        <button
-          onclick="submitComment(${i})"
-          class="bg-white text-black px-3 py-1 rounded mt-1"
-        >
+        <input id="comment-${i}" class="w-full p-2 bg-gray-800 rounded mt-3" placeholder="add a comment…" />
+        <button onclick="submitComment(${i})" class="bg-white text-black px-3 py-1 rounded mt-1">
           reply
         </button>
       </div>
@@ -288,4 +278,12 @@ function renderPosts() {
 // =============================================================
 // BOOT
 // =============================================================
-document.addEventListener("DOMContentLoaded", renderPosts);
+document.addEventListener("DOMContentLoaded", () => {
+  applyStatus(localStorage.getItem("milkkit_status") || "online");
+
+  document.querySelectorAll("#statusMenu button[data-status]").forEach(btn => {
+    btn.addEventListener("click", () => applyStatus(btn.dataset.status));
+  });
+
+  renderPosts();
+});
