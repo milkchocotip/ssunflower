@@ -12,35 +12,31 @@
 <body class="bg-black text-white min-h-screen flex flex-col">
 
   <!-- NAVBAR -->
-  <nav class="w-full flex items-center justify-between p-4 bg-gray-900 shadow-lg">
-    <div>
+  <nav class="w-full flex flex-wrap items-center justify-between gap-4 p-4 bg-gray-900 shadow-lg">
+
+    <!-- LOGO -->
+    <div class="flex-shrink-0">
       <img src="logo.png" class="h-8 object-contain" />
     </div>
 
+    <!-- SEARCH -->
     <input
       id="searchBar"
       type="text"
       placeholder="search"
-      class="p-2 rounded-lg bg-gray-800 text-white w-1/2"
+      class="p-2 rounded-lg bg-gray-800 text-white w-full sm:w-1/2"
     />
 
-    <div class="flex items-center gap-6">
-      <a href="submit.html" class="text-base text-white hover:text-gray-300">
-        + create post
-      </a>
+    <!-- RIGHT SIDE -->
+    <div class="flex items-center gap-4 flex-wrap">
 
-      <!-- LOGOUT -->
-      <button
-        onclick="logout()"
-        class="text-sm text-gray-400 hover:text-white"
-      >
-        logout
-      </button>
+      <!-- (optional) REMOVE create post link since inline exists -->
+      <!-- <a href="submit.html" class="text-base text-white hover:text-gray-300">+ create post</a> -->
 
       <!-- STATUS BUTTON -->
       <div
         id="statusButton"
-        class="relative w-8 h-8 rounded-full bg-gray-700 cursor-pointer ring-2 ring-green-500"
+        class="relative w-8 h-8 rounded-full bg-gray-700 cursor-pointer ring-2"
       >
         <div class="flex items-center justify-center w-full h-full text-xs">
           👤
@@ -54,37 +50,85 @@
         <!-- STATUS MENU -->
         <div
           id="statusMenu"
-          class="hidden absolute top-10 right-0 bg-gray-800 border border-gray-700 rounded-lg p-3 flex flex-col text-sm space-y-1 min-w-[160px]"
+          class="hidden absolute top-10 right-0 bg-gray-800 border border-gray-700 rounded-lg p-3 flex flex-col text-sm space-y-2 min-w-[160px] z-50"
         >
           <button data-status="online" class="flex items-center gap-2 text-left">
             <span class="w-2 h-2 rounded-full bg-green-500"></span> online
           </button>
+
           <button data-status="away" class="flex items-center gap-2 text-left">
             <span class="w-2 h-2 rounded-full bg-yellow-400"></span> away
           </button>
+
           <button data-status="dnd" class="flex items-center gap-2 text-left">
             <span class="w-2 h-2 rounded-full bg-red-600"></span> do not disturb
           </button>
+
           <button data-status="offline" class="flex items-center gap-2 text-left">
             <span class="w-2 h-2 rounded-full bg-gray-500"></span> offline
+          </button>
+
+          <!-- LOGOUT -->
+          <button
+            onclick="logout()"
+            class="flex items-center gap-2 text-left text-red-400 hover:text-red-300 pt-2 border-t border-gray-700 mt-1"
+          >
+            <span class="w-2 h-2 rounded-full bg-red-500"></span> logout
           </button>
         </div>
       </div>
     </div>
   </nav>
 
+  <!-- INLINE POST COMPOSER -->
+  <div class="w-full p-4 sm:p-6 border-b border-gray-800 bg-gray-900">
+    
+    <h2 class="text-lg font-semibold mb-3">✦ create a post ✦</h2>
+
+    <!-- TITLE -->
+    <input
+      id="inlineTitle"
+      type="text"
+      placeholder="title"
+      class="w-full p-3 mb-3 bg-gray-800 border border-gray-700 rounded-lg text-white"
+    />
+
+    <!-- BODY -->
+    <textarea
+      id="inlineContent"
+      placeholder="write your post..."
+      class="w-full min-h-[120px] p-3 bg-gray-800 border border-gray-700 rounded-lg text-white resize-none mb-3"
+    ></textarea>
+
+    <!-- FORMAT BUTTONS -->
+    <div class="flex gap-2 mb-3">
+      <button onclick="applyInlineFormat('bold')" class="px-3 py-1 bg-gray-700 rounded">b</button>
+      <button onclick="applyInlineFormat('italic')" class="px-3 py-1 bg-gray-700 rounded">i</button>
+      <button onclick="applyInlineFormat('h1')" class="px-3 py-1 bg-gray-700 rounded">h1</button>
+      <button onclick="applyInlineFormat('bullet')" class="px-3 py-1 bg-gray-700 rounded">•</button>
+    </div>
+
+    <!-- POST BUTTON -->
+    <button
+      onclick="submitInlinePost()"
+      class="w-full py-3 bg-white text-black rounded-lg font-semibold text-lg hover:bg-gray-200"
+    >
+      post
+    </button>
+  </div>
+
   <!-- FEED -->
   <div
     id="feed"
-    class="flex-1 p-6 w-full space-y-6 overflow-auto"
+    class="flex-1 p-4 sm:p-6 w-full space-y-6 overflow-auto"
   ></div>
 
   <!-- DELETE MODAL -->
   <div
     id="deleteModal"
-    class="hidden fixed inset-0 bg-black/60 backdrop-blur flex items-center justify-center"
+    class="hidden fixed inset-0 bg-black/60 backdrop-blur flex items-center justify-center p-4"
   >
-    <div class="bg-gray-900 p-6 rounded-xl w-80 text-center space-y-4">
+    <div class="bg-gray-900 p-6 rounded-xl w-full max-w-xs text-center space-y-4">
       <p class="text-lg">Delete this post?</p>
       <div class="flex gap-4 justify-center">
         <button
