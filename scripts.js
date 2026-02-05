@@ -307,3 +307,44 @@ document.addEventListener("DOMContentLoaded", () => {
 
   renderPosts();
 });
+
+// =============================================================
+// COMPOSER (INLINE POST CREATION)
+// =============================================================
+function openComposer() {
+  document.getElementById("composerOverlay")?.classList.remove("hidden");
+}
+
+function closeComposer() {
+  document.getElementById("composerOverlay")?.classList.add("hidden");
+}
+
+function submitInlinePost() {
+  const title = document.getElementById("inlineTitle")?.value.trim();
+  const raw = document.getElementById("inlineContent")?.value.trim();
+
+  if (!title || !raw) {
+    alert("title and content required");
+    return;
+  }
+
+  posts.unshift({
+    id: crypto.randomUUID(),
+    title,
+    raw,
+    content: marked.parse(raw),
+    author: currentUser,
+    time: Date.now(),
+    likes: [],
+    bookmarks: [],
+    comments: []
+  });
+
+  savePosts();
+
+  document.getElementById("inlineTitle").value = "";
+  document.getElementById("inlineContent").value = "";
+
+  closeComposer();
+  renderPosts();
+}
