@@ -74,6 +74,7 @@ function submitInlinePost() {
   if (!title || !content) return alert("fill everything out");
 
   posts.unshift({
+    id: crypto.randomUUID(),
     title,
     raw: content,
     content: marked.parse(content),
@@ -242,7 +243,8 @@ function toggleCommentBox(i) {
   renderPosts();
 }
 
-// =========================================================
+// =============================================================
+// RENDER
 // =============================================================
 function renderPosts() {
   const feed = document.getElementById("feed");
@@ -268,7 +270,7 @@ function renderPosts() {
       </div>` : `
       <div class="flex justify-between">
         <div>
-          <h3 class="text-xl font-bold">${post.title}</h3>
+          <a href="post.html?id=${post.id}" class="text-xl font-bold hover:underline">${post.title}</a>
           <p class="text-xs text-gray-400">m/${post.author} • ${formatTime(post.time)}</p>
         </div>
         ${post.author === currentUser ? `
