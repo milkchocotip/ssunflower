@@ -107,7 +107,7 @@ function getPreview(html, lines = 3) {
 }
 
 // =============================================================
-// INTERACTIONS (POST)
+// INTERACTIONS
 // =============================================================
 function toggleLike(i) {
   const likes = posts[i].likes;
@@ -153,6 +153,35 @@ function toggleReply(id) {
 }
 
 // =============================================================
+// COMMENT SUBMIT
+// =============================================================
+function submitComment(postIndex, parentId = null) {
+  const fieldId = parentId ? `reply-${parentId}` : `comment-${postIndex}`;
+  const field = document.getElementById(fieldId);
+  if (!field?.value.trim()) return;
+
+  const newComment = {
+    id: uid(),
+    author: currentUser,
+    raw: field.value,
+    content: marked.parse(field.value),
+    time: Date.now(),
+  likes: [],  
+    replies: []
+  };
+
+  if (!parentId) {
+    posts[postIndex].comments.push(newComment);
+  } else {
+    const parent = findComment(posts[postIndex].comments, parentId);
+    parent?.replies.push(newComment);
+  }
+
+  field.value = "";
+  savePosts();
+  renderPosts();
+
+// =============================================================
 // COMMENT LIKE
 // =============================================================
 function toggleCommentLike(postIndex, commentId) {
@@ -170,34 +199,7 @@ function toggleCommentLike(postIndex, commentId) {
   renderPosts();
 }
 
-// =============================================================
-// COMMENT SUBMIT
-// =============================================================
-function submitComment(postIndex, parentId = null) {
-  const fieldId = parentId ? `reply-${parentId}` : `comment-${postIndex}`;
-  const field = document.getElementById(fieldId);
-  if (!field?.value.trim()) return;
 
-  const newComment = {
-    id: uid(),
-    author: currentUser,
-    raw: field.value,
-    content: marked.parse(field.value),
-    time: Date.now(),
-    likes: [],
-    replies: []
-  };
-
-  if (!parentId) {
-    posts[postIndex].comments.push(newComment);
-  } else {
-    const parent = findComment(posts[postIndex].comments, parentId);
-    parent?.replies.push(newComment);
-  }
-
-  field.value = "";
-  savePosts();
-  renderPosts();
 }
 
 // =============================================================
@@ -210,34 +212,35 @@ function renderCommentTree(comments, postIndex, depth = 0) {
         m/${c.author} • ${formatTime(c.time)}
       </div>
 
-      <div class="prose prose-invert text-sm mt-1">
-        ${c.content}
-      </div>
+<div class="prose prose-invert text-sm mt-1">
+  ${c.content}
+</div>
 
-      <div class="flex items-center gap-4 mt-1 text-xs text-gray-400">
-        <button
-          onclick="toggleCommentLike(${postIndex}, '${c.id}')"
-          class="flex items-center gap-1 hover:text-white ${c.likes.includes(currentUser) ? "text-white" : ""}"
-        >
-          ${icons.like}
-          <span>${c.likes.length}</span>
-        </button>
+<div class="flex items-center gap-4 mt-1 text-xs text-gray-400">
 
-        <button onclick="toggleReply('${c.id}')" class="hover:text-white">
-          reply
-        </button>
-      </div>
+  <!-- COMMENT LIKE -->
+  <button
+    onclick="toggleCommentLike(${postIndex}, '${c.id}')"
+    class="flex items-center gap-1 hover:text-white ${c.likes?.includes(currentUser) ? "text-white" : ""}"
+  >
+    ${icons.like}
+    <span>${c.likes?.length || 0}</span>
+  </button>
+
+  <!-- REPLY -->
+  <button
+    onclick="toggleReply('${c.id}')"
+    class="hover:text-white"
+  >
+    reply
+  </button>
+
+</div>
+
 
       <div id="reply-box-${c.id}" class="hidden mt-2">
-        <input
-          id="reply-${c.id}"
-          class="w-full p-2 bg-gray-800 rounded text-sm"
-          placeholder="reply…"
-        />
-        <button
-          onclick="submitComment(${postIndex}, '${c.id}')"
-          class="bg-white text-black px-2 py-1 rounded mt-1 text-xs"
-        >
+        <input id="reply-${c.id}" class="w-full p-2 bg-gray-800 rounded text-sm" placeholder="reply…" />
+        <button onclick="submitComment(${postIndex}, '${c.id}')" class="bg-white text-black px-2 py-1 rounded mt-1 text-xs">
           post
         </button>
       </div>
@@ -300,15 +303,8 @@ function renderPosts() {
       <div class="${IS_SINGLE_POST ? "" : "hidden"} mt-4">
         ${renderCommentTree(post.comments, i)}
 
-        <input
-          id="comment-${i}"
-          class="w-full p-2 bg-gray-800 rounded mt-3"
-          placeholder="add a comment…"
-        />
-        <button
-          onclick="submitComment(${i})"
-          class="bg-white text-black px-3 py-1 rounded mt-1"
-        >
+        <input id="comment-${i}" class="w-full p-2 bg-gray-800 rounded mt-3" placeholder="add a comment…" />
+        <button onclick="submitComment(${i})" class="bg-white text-black px-3 py-1 rounded mt-1">
           reply
         </button>
       </div>
