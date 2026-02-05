@@ -32,7 +32,7 @@
     <!-- RIGHT SIDE -->
     <div class="flex items-center gap-4 flex-wrap">
 
-      <!-- OPEN COMPOSER (Twitter-style) -->
+      <!-- CREATE POST -->
       <button
         onclick="openComposer()"
         class="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-white font-medium shadow-sm transition"
@@ -45,9 +45,7 @@
         id="statusButton"
         class="relative w-8 h-8 rounded-full bg-gray-700 cursor-pointer ring-2"
       >
-        <div class="flex items-center justify-center w-full h-full text-xs">
-          👤
-        </div>
+        <div class="flex items-center justify-center w-full h-full text-xs">👤</div>
 
         <div
           id="statusDot"
@@ -86,44 +84,39 @@
     </div>
   </nav>
 
+  <!-- MAIN LAYOUT: SIDEBAR + FEED -->
+  <div class="flex w-full">
 
+    <!-- SIDEBAR -->
+    <aside class="hidden md:flex flex-col w-64 p-6 border-r border-gray-800 bg-black/30 sticky top-20 h-[calc(100vh-80px)]">
 
-  <!-- ============================= -->
-  <!-- LEFT SIDEBAR (ADDED HERE) -->
-  <!-- ============================= -->
-  <aside class="hidden md:flex flex-col w-64 p-6 border-r border-gray-800 bg-black/30 fixed top-[100px] left-0 bottom-0 z-30">
-
-    <!-- PROFILE CARD -->
-    <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 mb-6">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center text-sm">
-          👤
-        </div>
-        <div>
-          <p id="sidebarUser" class="text-sm font-semibold"></p>
-          <p class="text-xs text-green-400">online</p>
+      <!-- PROFILE CARD -->
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 mb-6">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center text-sm">👤</div>
+          <div>
+            <p id="sidebarUser" class="text-sm font-semibold"></p>
+            <p class="text-xs text-green-400">online</p>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- NAV LINKS -->
-    <nav class="flex flex-col gap-4 text-sm">
-      <button onclick="goHome()" class="text-gray-300 hover:text-white transition">home</button>
-      <button onclick="goMyPosts()" class="text-gray-300 hover:text-white transition">my posts</button>
-      <button onclick="goSaved()" class="text-gray-300 hover:text-white transition">saved</button>
-    </nav>
+      <!-- NAV LINKS -->
+      <nav class="flex flex-col gap-4 text-sm">
+        <button onclick="goHome()" class="text-gray-300 hover:text-white transition">home</button>
+        <button onclick="goMyPosts()" class="text-gray-300 hover:text-white transition">my posts</button>
+        <button onclick="goSaved()" class="text-gray-300 hover:text-white transition">saved</button>
+      </nav>
 
-  </aside>
+    </aside>
 
+    <!-- FEED -->
+    <main
+      id="feed"
+      class="flex-1 p-4 sm:p-6 space-y-6 overflow-auto"
+    ></main>
 
-
-  <!-- FEED (shifted right for sidebar) -->
-  <div
-    id="feed"
-    class="flex-1 p-4 sm:p-6 w-full space-y-6 overflow-auto md:ml-72"
-  ></div>
-
-
+  </div>
 
   <!-- DELETE MODAL -->
   <div
@@ -133,23 +126,13 @@
     <div class="bg-gray-900 p-6 rounded-xl w-full max-w-xs text-center space-y-4">
       <p class="text-lg">Delete this post?</p>
       <div class="flex gap-4 justify-center">
-        <button
-          id="confirmDelete"
-          class="px-4 py-2 bg-red-600 rounded-lg"
-        >
-          delete
-        </button>
-        <button
-          id="cancelDelete"
-          class="px-4 py-2 bg-gray-700 rounded-lg"
-        >
-          cancel
-        </button>
+        <button id="confirmDelete" class="px-4 py-2 bg-red-600 rounded-lg">delete</button>
+        <button id="cancelDelete" class="px-4 py-2 bg-gray-700 rounded-lg">cancel</button>
       </div>
     </div>
   </div>
 
-  <!-- TWITTER-STYLE COMPOSER MODAL -->
+  <!-- COMPOSER MODAL -->
   <div
     id="composerOverlay"
     class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50"
@@ -161,12 +144,8 @@
         <button onclick="closeComposer()" class="text-gray-400 hover:text-white text-lg">✕</button>
       </div>
 
-      <input
-        id="inlineTitle"
-        type="text"
-        placeholder="title"
-        class="w-full p-3 mb-3 bg-gray-800 border border-gray-700 rounded-lg text-white"
-      />
+      <input id="inlineTitle" type="text" placeholder="title"
+             class="w-full p-3 mb-3 bg-gray-800 border border-gray-700 rounded-lg text-white" />
 
       <textarea
         id="inlineContent"
@@ -187,19 +166,18 @@
       >
         post
       </button>
+
     </div>
   </div>
 
   <script src="scripts.js"></script>
 
   <script>
-    // Fill sidebar username
     document.addEventListener("DOMContentLoaded", () => {
       const u = localStorage.getItem("milkkit_user");
       if (u) document.getElementById("sidebarUser").innerText = `m/${u}`;
     });
 
-    // Sidebar navigation logic
     function goHome() { window.location.href = "home.html"; }
     function goMyPosts() { window.location.href = "home.html?filter=myposts"; }
     function goSaved() { window.location.href = "home.html?filter=saved"; }
