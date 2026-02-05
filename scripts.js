@@ -268,41 +268,55 @@ function renderPosts() {
       <div class="prose prose-invert mt-3">${post.content}</div>
 
       <!-- ACTION BAR -->
-      <div class="mt-5 flex items-center justify-between text-gray-400 text-sm select-none">
+<div class="mt-4 flex items-center justify-around text-gray-500 text-sm select-none">
 
-        <!-- COMMENT -->
-        <button onclick="focusComment(${i})" class="flex items-center gap-1 hover:text-white transition">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round"
-              d="M4 6h16M4 12h10M4 18h6" />
-          </svg>
-        </button>
+  <!-- COMMENT -->
+  <button onclick="focusComment(${i})" class="hover:text-white transition flex items-center gap-1">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5"
+         fill="none" stroke="currentColor" stroke-width="1.5"
+         stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7
+               8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8
+               8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5
+               a8.5 8.5 0 0 1 8 8z"/>
+    </svg>
+  </button>
 
-        <!-- LIKE (milk bottle) -->
-        <button onclick="toggleLike(${i})" class="flex items-center gap-1 hover:text-white transition">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 ${liked ? "text-white" : "text-gray-500"}" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-            <path d="M9 2h6v4l1 2v13a3 3 0 01-3 3h-2a3 3 0 01-3-3V8l1-2V2z"/>
-          </svg>
-          <span>${post.likes.length || 0}</span>
-        </button>
+  <!-- LIKE (milk bottle) -->
+  <button onclick="toggleLike(${i})"
+          class="hover:text-white transition flex items-center gap-1 ${liked ? "text-white" : ""}">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5"
+         fill="none" stroke="currentColor" stroke-width="1.5"
+         stroke-linecap="round" stroke-linejoin="round"
+         viewBox="0 0 24 24">
+      <path d="M9 2h6v4l1 2v13a3 3 0 0 1-3 3h-2a3 3 0 0 1-3-3V8l1-2V2z"/>
+    </svg>
+    <span>${post.likes.length || 0}</span>
+  </button>
 
-        <!-- BOOKMARK -->
-        <button onclick="bookmarkPost(${i})" class="hover:text-white transition">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round"
-              d="M6 3h12v18l-6-4-6 4V3z"/>
-          </svg>
-        </button>
+  <!-- BOOKMARK -->
+  <button onclick="bookmarkPost(${i})"
+          class="hover:text-white transition">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5"
+         fill="none" stroke="currentColor" stroke-width="1.5"
+         stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 3h12v18l-6-4-6 4V3z"/>
+    </svg>
+  </button>
 
-        <!-- SHARE -->
-        <button onclick="sharePost(${i})" class="hover:text-white transition">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round"
-              d="M4 12v8h16v-8M12 4v12M7 9l5-5 5 5"/>
-          </svg>
-        </button>
+  <!-- SHARE -->
+  <button onclick="sharePost(${i})"
+          class="hover:text-white transition">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5"
+         fill="none" stroke="currentColor" stroke-width="1.5"
+         stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 4v12m0-12l5 5m-5-5L7 9"/>
+      <path d="M4 12v8h16v-8"/>
+    </svg>
+  </button>
 
-      </div>
+</div>
+
 
       <!-- COMMENT BOX -->
       <div id="comment-box-${i}" class="hidden mt-3">
