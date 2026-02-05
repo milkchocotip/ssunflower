@@ -3,278 +3,47 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MILKKIT | Home</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      background: #000;
-      color: #fff;
-      font-family: "Inter", sans-serif;
-      margin: 0;
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-    }
-    nav {
-      background: #111;
-      padding: 1rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-    }
-    input, textarea {
-      background: #222;
-      border: 1px solid #333;
-      color: white;
-      border-radius: 0.5rem;
-      padding: 0.7rem;
-      width: 100%;
-      font-size: 1rem;
-    }
-    button {
-      padding: 0.6rem 1rem;
-      border: none;
-      border-radius: 0.5rem;
-      cursor: pointer;
-      font-weight: 600;
-      transition: 0.2s;
-    }
-    .white { background: white; color: black; }
-    .gray { background: #333; color: white; }
-    .gray:hover { background: #444; }
-    .feed { flex: 1; padding: 1.5rem; overflow-y: auto; }
-    .post {
-      background: #1a1a1a;
-      border-radius: 0.75rem;
-      padding: 1rem;
-      margin-bottom: 1rem;
-    }
-    .post h2 { margin: 0.3rem 0 0.6rem; }
-    .toolbar button { margin-right: 0.5rem; }
-    .comment, .reply {
-      background: #2a2a2a;
-      border-radius: 0.5rem;
-      padding: 0.5rem;
-      margin-top: 0.5rem;
-    }
-    .reply { margin-left: 1.5rem; font-size: 0.9rem; }
-    .status-dot {
-      width: 12px; height: 12px; border-radius: 50%;
-      display: inline-block; margin-left: 8px;
-    }
-    .green { background: #22c55e; }
-    .yellow { background: #facc15; }
-    .red { background: #ef4444; }
-    .graydot { background: #555; }
-    .modal {
-      position: fixed; top:0; left:0; width:100%; height:100%;
-      background: rgba(0,0,0,0.8);
-      display:flex; align-items:center; justify-content:center;
-    }
-    .modal-box {
-      background:#111; padding:2rem; border-radius:1rem; text-align:center;
-    }
-  </style>
+  <title>MILKKIT — Home</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script defer src="scripts.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <nav>
-    <div><strong>MILKKIT ✦</strong></div>
-    <input id="search" placeholder="search..." style="max-width:40%;" />
-    <div>
-      <button class="gray" onclick="openCreate()">+ create post</button>
-      <button id="statusBtn" class="gray" onclick="toggleStatusMenu()">status<span id="statusDot" class="status-dot green"></span></button>
-      <div id="statusMenu" style="display:none; position:absolute; right:1rem; background:#222; border-radius:0.5rem; padding:0.5rem;">
-        <div onclick="setStatus('online')" style="padding:0.3rem; cursor:pointer;">🟢 online</div>
-        <div onclick="setStatus('away')" style="padding:0.3rem; cursor:pointer;">🟡 away</div>
-        <div onclick="setStatus('dnd')" style="padding:0.3rem; cursor:pointer;">🔴 do not disturb</div>
-        <div onclick="setStatus('offline')" style="padding:0.3rem; cursor:pointer;">⚫ offline</div>
+<body class="bg-black text-white min-h-screen flex flex-col">
+  <!-- NAVBAR -->
+  <nav class="w-full flex items-center justify-between p-4 bg-gray-900 shadow-lg">
+    <div><img src="logo.png" class="h-8 object-contain" /></div>
+    <input id="searchBar" type="text" placeholder="search" class="p-2 rounded-lg bg-gray-800 text-white w-1/2" />
+    <div class="flex items-center gap-6">
+      <a href="submit.html" class="text-base text-white hover:text-gray-300">+ create post</a>
+
+      <!-- STATUS BUTTON -->
+      <div id="statusButton" class="relative w-8 h-8 rounded-full bg-gray-700 cursor-pointer ring-2 ring-green-500">
+        <div class="flex items-center justify-center w-full h-full text-xs">👤</div>
+        <div id="statusDot" class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-gray-900 bg-green-500"></div>
+
+        <!-- STATUS MENU -->
+        <div id="statusMenu" class="hidden absolute top-10 right-0 bg-gray-800 border border-gray-700 rounded-lg p-3 flex flex-col text-sm space-y-1 min-w-[160px]">
+          <button data-status="online" class="flex items-center gap-2 text-left"><span class='w-2 h-2 rounded-full bg-green-500'></span> online</button>
+          <button data-status="away" class="flex items-center gap-2 text-left"><span class='w-2 h-2 rounded-full bg-yellow-400'></span> away</button>
+          <button data-status="dnd" class="flex items-center gap-2 text-left"><span class='w-2 h-2 rounded-full bg-red-600'></span> do not disturb</button>
+          <button data-status="offline" class="flex items-center gap-2 text-left"><span class='w-2 h-2 rounded-full bg-gray-500'></span> offline</button>
+        </div>
       </div>
     </div>
   </nav>
 
-  <div id="feed" class="feed"></div>
+  <!-- FEED -->
+  <div id="feed" class="flex-1 p-6 w-full space-y-6 overflow-auto"></div>
 
-  <!-- Create Post Modal -->
-  <div id="createModal" class="modal" style="display:none;">
-    <div class="modal-box" style="width:90%; max-width:600px;">
-      <h2>Create Post</h2>
-      <input id="postTitle" placeholder="post title" />
-      <textarea id="postContent" placeholder="write your post..." style="min-height:200px; margin-top:0.8rem;"></textarea>
-      <div class="toolbar" style="margin:0.6rem 0;">
-        <button class="gray" onclick="applyMarkdown('**','**')">B</button>
-        <button class="gray" onclick="applyMarkdown('*','*')">I</button>
-        <button class="gray" onclick="applyMarkdown('# ','')">H1</button>
-        <button class="gray" onclick="applyMarkdown('- ','')">•</button>
+  <!-- DELETE MODAL -->
+  <div id="deleteModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur flex items-center justify-center">
+    <div class="bg-gray-900 p-6 rounded-xl w-80 text-center space-y-4">
+      <p class="text-lg">Delete this post?</p>
+      <div class="flex gap-4 justify-center">
+        <button id="confirmDelete" class="px-4 py-2 bg-red-600 rounded-lg">delete</button>
+        <button id="cancelDelete" class="px-4 py-2 bg-gray-700 rounded-lg">cancel</button>
       </div>
-      <button class="white" onclick="savePost()">post</button>
-      <button class="gray" onclick="closeCreate()">cancel</button>
     </div>
   </div>
-
-  <script>
-    let posts = JSON.parse(localStorage.getItem("posts") || "[]");
-    let status = localStorage.getItem("status") || "online";
-    let selectedTextArea = null;
-
-    function renderFeed() {
-      const feed = document.getElementById("feed");
-      if (!posts.length) {
-        feed.innerHTML = '<p style="text-align:center; color:#777;">no posts yet.</p>';
-        return;
-      }
-      feed.innerHTML = "";
-      posts.forEach((p, i) => {
-        const div = document.createElement("div");
-        div.className = "post";
-        div.innerHTML = `
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span>${p.username}</span>
-            <div>
-              <button class="gray" onclick="editPost(${i})">edit</button>
-              <button class="gray" onclick="hidePost(${i})">hide</button>
-              <button class="gray" onclick="deletePost(${i})">delete</button>
-            </div>
-          </div>
-          <h2>${p.title}</h2>
-          <div>${marked.parse(p.content)}</div>
-          <div id="comments-${i}"></div>
-          <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
-            <input id="commentInput-${i}" placeholder="write a comment..." />
-            <button class="white" onclick="addComment(${i})">post</button>
-          </div>`;
-        feed.appendChild(div);
-        renderComments(i);
-      });
-    }
-
-    function renderComments(index) {
-      const container = document.getElementById(`comments-${index}`);
-      const cList = posts[index].comments || [];
-      container.innerHTML = "";
-      cList.forEach((c, ci) => {
-        const cDiv = document.createElement("div");
-        cDiv.className = "comment";
-        cDiv.innerHTML = `<strong>${c.user}</strong> ${c.text}`;
-        (c.replies || []).forEach((r) => {
-          const rDiv = document.createElement("div");
-          rDiv.className = "reply";
-          rDiv.innerHTML = `<strong>${r.user}</strong> ${r.text}`;
-          cDiv.appendChild(rDiv);
-        });
-        const replyBox = document.createElement("div");
-        replyBox.innerHTML = `
-          <div style="display:flex; gap:0.5rem; margin-top:0.3rem;">
-            <input id="replyInput-${index}-${ci}" placeholder="write a reply..." />
-            <button class="gray" onclick="addReply(${index},${ci})">reply</button>
-          </div>`;
-        cDiv.appendChild(replyBox);
-        container.appendChild(cDiv);
-      });
-    }
-
-    function addComment(i) {
-      const input = document.getElementById(`commentInput-${i}`);
-      const text = input.value.trim();
-      if (!text) return;
-      posts[i].comments = posts[i].comments || [];
-      posts[i].comments.push({ user: "anonymous", text, replies: [] });
-      localStorage.setItem("posts", JSON.stringify(posts));
-      renderComments(i);
-      input.value = "";
-    }
-
-    function addReply(i, ci) {
-      const input = document.getElementById(`replyInput-${i}-${ci}`);
-      const text = input.value.trim();
-      if (!text) return;
-      posts[i].comments[ci].replies = posts[i].comments[ci].replies || [];
-      posts[i].comments[ci].replies.push({ user: "anonymous", text });
-      localStorage.setItem("posts", JSON.stringify(posts));
-      renderComments(i);
-      input.value = "";
-    }
-
-    function openCreate() {
-      document.getElementById("createModal").style.display = "flex";
-      selectedTextArea = document.getElementById("postContent");
-    }
-    function closeCreate() {
-      document.getElementById("createModal").style.display = "none";
-      document.getElementById("postTitle").value = "";
-      document.getElementById("postContent").value = "";
-    }
-
-    function applyMarkdown(before, after = before) {
-      const t = selectedTextArea;
-      const start = t.selectionStart;
-      const end = t.selectionEnd;
-      const text = t.value;
-      const selected = text.slice(start, end);
-      const newText =
-        text.slice(0, start) + before + selected + after + text.slice(end);
-      t.value = newText;
-    }
-
-    function savePost() {
-      const title = document.getElementById("postTitle").value.trim();
-      const content = document.getElementById("postContent").value.trim();
-      if (!title || !content) return alert("fill all fields");
-      const newPost = {
-        title,
-        content,
-        username: "m/user",
-        comments: []
-      };
-      posts.push(newPost);
-      localStorage.setItem("posts", JSON.stringify(posts));
-      closeCreate();
-      renderFeed();
-    }
-
-    function editPost(i) {
-      const p = posts[i];
-      document.getElementById("postTitle").value = p.title;
-      document.getElementById("postContent").value = p.content;
-      openCreate();
-      posts.splice(i, 1);
-      localStorage.setItem("posts", JSON.stringify(posts));
-      renderFeed();
-    }
-
-    function hidePost(i) {
-      posts.splice(i, 1);
-      localStorage.setItem("posts", JSON.stringify(posts));
-      renderFeed();
-    }
-
-    function deletePost(i) {
-      if (!confirm("Delete this post?")) return;
-      posts.splice(i, 1);
-      localStorage.setItem("posts", JSON.stringify(posts));
-      renderFeed();
-    }
-
-    function toggleStatusMenu() {
-      const menu = document.getElementById("statusMenu");
-      menu.style.display = menu.style.display === "none" ? "block" : "none";
-    }
-    function setStatus(s) {
-      status = s;
-      localStorage.setItem("status", s);
-      const dot = document.getElementById("statusDot");
-      dot.className = "status-dot " +
-        (s === "online" ? "green" :
-         s === "away" ? "yellow" :
-         s === "dnd" ? "red" : "graydot");
-      document.getElementById("statusMenu").style.display = "none";
-    }
-
-    window.onload = () => {
-      renderFeed();
-      setStatus(status);
-    };
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </body>
 </html>
