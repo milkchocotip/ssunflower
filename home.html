@@ -21,7 +21,7 @@
       </a>
     </div>
 
-    <!-- SEARCH -->
+    <!-- SEARCH (visual only for now) -->
     <input
       id="searchBar"
       type="text"
@@ -39,35 +39,10 @@
         + create post
       </button>
 
-      <!-- NOTIFICATIONS -->
-      <div class="relative">
-        <button 
-          onclick="toggleNotifications()"
-          class="relative w-8 h-8 flex items-center justify-center bg-gray-800 hover:bg-gray-700 rounded-full transition"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" 
-              class="w-5 h-5 text-white"
-              fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round"
-                  d="M14 17h-4m6-6v3m-6-3v3m9 4H6a2 2 0 
-                    01-2-2v-3a6 6 0 0112 0v3a2 2 0 01-2 2z" />
-          </svg>
-
-          <span id="notifDot"
-                class="hidden absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-gray-900">
-          </span>
-        </button>
-
-        <div
-          id="notifMenu"
-          class="hidden absolute right-0 mt-2 bg-gray-900 border border-gray-700 rounded-lg p-3 w-64 max-h-80 overflow-y-auto space-y-3 z-50"
-        ></div>
-      </div>
-
       <!-- STATUS BUTTON -->
       <div
         id="statusButton"
-        class="relative w-8 h-8 rounded-full bg-gray-700 cursor-pointer ring-2"
+        class="relative w-8 h-8 rounded-full bg-gray-700 cursor-pointer ring-2 ring-green-500"
       >
         <div class="flex items-center justify-center w-full h-full text-xs">👤</div>
 
@@ -101,6 +76,7 @@
           </button>
         </div>
       </div>
+
     </div>
   </nav>
 
@@ -129,6 +105,50 @@
     </aside>
 
     <main id="feed" class="flex-1 p-4 sm:p-6 space-y-6 overflow-auto"></main>
+  </div>
+
+  <!-- COMPOSER OVERLAY -->
+  <div
+    id="composerOverlay"
+    class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center"
+  >
+    <div class="bg-gray-900 border border-gray-800 rounded-xl w-full max-w-2xl p-6 space-y-4">
+
+      <div class="flex justify-between items-center">
+        <h2 class="text-lg font-semibold">create post</h2>
+        <button onclick="closeComposer()" class="text-gray-400 hover:text-white">✕</button>
+      </div>
+
+      <input
+        id="inlineTitle"
+        placeholder="title"
+        class="w-full p-2 bg-gray-800 border border-gray-700 rounded text-white"
+      />
+
+      <textarea
+        id="inlineContent"
+        rows="8"
+        placeholder="write in markdown…"
+        class="w-full p-2 bg-gray-800 border border-gray-700 rounded text-white resize-none"
+      ></textarea>
+
+      <div class="flex gap-2 text-sm">
+        <button onclick="applyInlineFormat('bold')" class="px-2 py-1 bg-gray-800 rounded">bold</button>
+        <button onclick="applyInlineFormat('italic')" class="px-2 py-1 bg-gray-800 rounded">italic</button>
+        <button onclick="applyInlineFormat('h1')" class="px-2 py-1 bg-gray-800 rounded">h1</button>
+        <button onclick="applyInlineFormat('bullet')" class="px-2 py-1 bg-gray-800 rounded">• list</button>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeComposer()" class="px-4 py-2 bg-gray-800 rounded">
+          cancel
+        </button>
+        <button onclick="submitInlinePost()" class="px-4 py-2 bg-white text-black rounded">
+          post
+        </button>
+      </div>
+
+    </div>
   </div>
 
   <script src="scripts.js"></script>
