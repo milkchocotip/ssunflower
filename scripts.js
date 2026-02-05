@@ -19,7 +19,6 @@ if (!currentUser && !isPublicPage) {
 // =============================================================
 let posts = JSON.parse(localStorage.getItem("milkkit_posts") || "[]");
 let notifications = JSON.parse(localStorage.getItem("milkkit_notifs") || "[]");
-let currentEditId = null;
 
 function savePosts() {
   localStorage.setItem("milkkit_posts", JSON.stringify(posts));
@@ -33,9 +32,7 @@ function saveNotifs() {
 // TIME FORMATTER
 // =============================================================
 function formatTime(time) {
-  const now = Date.now();
-  const diff = now - time;
-
+  const diff = Date.now() - time;
   const sec = Math.floor(diff / 1000);
   const min = Math.floor(sec / 60);
   const hr = Math.floor(min / 60);
@@ -59,13 +56,12 @@ function logout() {
 }
 
 // =============================================================
-// NOTIFICATION ENGINE
+// NOTIFICATIONS
 // =============================================================
-function addNotification(type, message, link = null) {
+function addNotification(type, message) {
   notifications.unshift({
     type,
     message,
-    link,
     time: Date.now(),
     read: false
   });
@@ -78,17 +74,17 @@ function addNotification(type, message, link = null) {
 function updateNotifDot() {
   const dot = document.getElementById("notifDot");
   if (!dot) return;
-
-  const unread = notifications.some(n => !n.read);
-  dot.classList.toggle("hidden", !unread);
+  dot.classList.toggle("hidden", !notifications.some(n => !n.read));
 }
 
 function toggleNotifications() {
   const menu = document.getElementById("notifMenu");
+  if (!menu) return;
+
   menu.classList.toggle("hidden");
 
   if (!menu.classList.contains("hidden")) {
-    notifications.forEach(n => n.read = true);
+    notifications.forEach(n => (n.read = true));
     saveNotifs();
     updateNotifDot();
     renderNotifications();
@@ -99,21 +95,24 @@ function renderNotifications() {
   const menu = document.getElementById("notifMenu");
   if (!menu) return;
 
-  if (notifications.length === 0) {
+  if (!notifications.length) {
     menu.innerHTML = `<p class="text-gray-400 text-center py-4">no notifications yet ✦</p>`;
     return;
   }
 
-  menu.innerHTML = notifications.map(n => `
-    <div class="p-2 rounded-lg bg-gray-800 border border-gray-700 hover:bg-gray-700 transition cursor-pointer">
-      <p class="text-white">${n.message}</p>
+  menu.innerHTML = notifications
+    .map(
+      n => `
+    <div class="p-2 rounded bg-gray-800 border border-gray-700">
+      <p>${n.message}</p>
       <p class="text-xs text-gray-500">${formatTime(n.time)}</p>
-    </div>
-  `).join("");
+    </div>`
+    )
+    .join("");
 }
 
 // =============================================================
-// INLINE COMPOSER
+// COMPOSER
 // =============================================================
 function openComposer() {
   document.getElementById("composerOverlay")?.classList.remove("hidden");
@@ -124,8 +123,9 @@ function closeComposer() {
 }
 
 function submitInlinePost() {
-  const title = document.getElementById("inlineTitle")?.value.trim();
-  const content = document.getElementById("inlineContent")?.value.trim();
+  const title = document.getElementById("inlineTitle").value.trim();
+  const content = document.getElementById("inlineContent").value.trim();
+
   if (!title || !content) return alert("fill everything out");
 
   posts.unshift({
@@ -133,10 +133,10 @@ function submitInlinePost() {
     raw: content,
     content: marked.parse(content),
     author: currentUser,
+    time: Date.now(),
     comments: [],
     likes: [],
-    hidden: false,
-    time: Date.now(),
+    hidden: false
   });
 
   savePosts();
@@ -158,71 +158,62 @@ function applyInlineFormat(type) {
 }
 
 // =============================================================
-// LIKE / SHARE / BOOKMARK
+// COMMENTS
 // =============================================================
-function toggleLike(i) {
-  const post = posts[i];
-  post.likes ??= [];
+function submitComment(i) {
+  const field = document.getElementById(`comment-${i}`);
+  if (!field || !field.value.trim()) return;
 
-  const liked = post.likes.includes(currentUser);
-  post.likes = liked
-    ? post.likes.filter(u => u !== currentUser)
-    : [...post.likes, currentUser];
-
-  if (!liked && post.author !== currentUser) {
-    addNotification("like", `m/${currentUser} liked your post "${post.title}"`);
-  }
+  posts[i].comments.push({
+    author: currentUser,
+    raw: field.value,
+    content: marked.parse(field.value),
+    time: Date.now()
+  });
 
   savePosts();
+  field.value = "";
   renderPosts();
 }
 
-function sharePost(i) {
-  navigator.clipboard.writeText(location.origin + "/home.html#post-" + i);
-  alert("link copied");
-}
-
-function bookmarkPost() {
-  alert("saved.");
-}
-
 // =============================================================
-// MENU / POST CONTROLS
+// POSTS RENDER
 // =============================================================
-function toggleMenu(i) {
-  document.querySelectorAll("[id^='menu-']").forEach(m => m.classList.add("hidden"));
-  document.getElementById(`menu-${i}`)?.classList.toggle("hidden");
-}
+function renderPosts() {
+  const feed = document.getElementById("feed");
+  if (!feed) return;
 
-function startEdit(i) {
-  window.location.href = `submit.html?edit=${i}`;
-}
+  feed.innerHTML = "";
 
-function hidePost(i) {
-  posts[i].hidden = true;
-  savePosts();
-  renderPosts();
-}
+  posts.forEach((post, i) => {
+    if (post.hidden) return;
 
-let deleteTarget = null;
+    const card = document.createElement("div");
+    card.className = "bg-gray-900 p-4 rounded-xl border border-gray-800";
+    card.id = `post-${i}`;
 
-function askDelete(i) {
-  deleteTarget = i;
-  document.getElementById("deleteModal")?.classList.remove("hidden");
-}
+    card.innerHTML = `
+      <h3 class="text-xl font-bold">${post.title}</h3>
+      <p class="text-xs text-gray-400 mb-2">
+        m/${post.author} • ${formatTime(post.time)}
+      </p>
 
-function confirmDelete() {
-  if (deleteTarget === null) return;
-  posts.splice(deleteTarget, 1);
-  savePosts();
-  deleteTarget = null;
-  document.getElementById("deleteModal")?.classList.add("hidden");
-  renderPosts();
-}
+      <div class="prose prose-invert mb-4">${post.content}</div>
 
-function cancelDelete() {
-  deleteTarget = null;
-  document.getElementById("deleteModal")?.classList.add("hidden");
+      <button onclick="document.getElementById('comment-box-${i}').classList.toggle('hidden')" class="text-gray-400 hover:text-white">
+        💬 comment
+      </button>
+
+      <div id="comment-box-${i}" class="hidden mt-3">
+        <input id="comment-${i}" class="w-full p-2 bg-gray-800 border border-gray-700 rounded text-white" placeholder="add a comment…" />
+        <button onclick="submitComment(${i})" class="mt-2 bg-white text-black px-3 py-1 rounded">
+          reply
+        </button>
+      </div>
+    `;
+
+    feed.appendChild(card);
+  });
 }
 
 // =============================================================
@@ -244,19 +235,12 @@ function syncSidebarStatus(status) {
 }
 
 // =============================================================
-// STATUS ICON LOGIC
+// STATUS MENU
 // =============================================================
 document.addEventListener("DOMContentLoaded", () => {
   const statusButton = document.getElementById("statusButton");
   const statusMenu = document.getElementById("statusMenu");
   const statusDot = document.getElementById("statusDot");
-
-  const ringColors = {
-    online: "ring-green-500",
-    away: "ring-yellow-400",
-    dnd: "ring-red-600",
-    offline: "ring-gray-500"
-  };
 
   const dotColors = {
     online: "bg-green-500",
@@ -265,9 +249,16 @@ document.addEventListener("DOMContentLoaded", () => {
     offline: "bg-gray-500"
   };
 
+  const ringColors = {
+    online: "ring-green-500",
+    away: "ring-yellow-400",
+    dnd: "ring-red-600",
+    offline: "ring-gray-500"
+  };
+
   statusButton?.addEventListener("click", e => {
     e.stopPropagation();
-    statusMenu?.classList.toggle("hidden");
+    statusMenu.classList.toggle("hidden");
   });
 
   document.querySelectorAll("#statusMenu button[data-status]").forEach(btn => {
@@ -289,19 +280,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   const savedStatus = localStorage.getItem("milkkit_status");
-  if (savedStatus && statusDot) {
-    statusDot.className =
-      "absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-gray-900 " +
-      dotColors[savedStatus];
+  if (savedStatus) syncSidebarStatus(savedStatus);
 
-    statusButton.className =
-      "relative w-8 h-8 rounded-full bg-gray-700 cursor-pointer ring-2 " +
-      ringColors[savedStatus];
-
-    syncSidebarStatus(savedStatus);
-  }
-
-  document.addEventListener("click", () => statusMenu?.classList.add("hidden"));
+  document.addEventListener("click", () => statusMenu.classList.add("hidden"));
 });
 
 // =============================================================
@@ -311,7 +292,4 @@ document.addEventListener("DOMContentLoaded", () => {
   renderPosts();
   renderNotifications();
   updateNotifDot();
-
-  document.getElementById("confirmDelete")?.addEventListener("click", confirmDelete);
-  document.getElementById("cancelDelete")?.addEventListener("click", cancelDelete);
 });
