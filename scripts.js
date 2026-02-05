@@ -249,17 +249,34 @@ function renderPosts() {
           </button>
         </div>
 
-        <div id="comment-box-${i}" class="hidden mt-3">
-          <input
-            id="comment-${i}"
-            class="w-full p-2 bg-gray-800 border border-gray-700 rounded text-white"
-            placeholder="add a comment…"
-          />
-          <button
-            onclick="submitComment(${i})"
-            class="mt-2 bg-white text-black px-3 py-1 rounded"
-          >reply</button>
-        </div>`;
+        <div id="comment-box-${i}" class="hidden mt-3 space-y-3">
+
+  <div class="space-y-2">
+    ${post.comments.map(c => `
+      <div class="text-sm">
+        <span class="text-gray-400">m/${c.author}</span>
+        <div class="prose prose-invert whitespace-pre-wrap">
+          ${c.content}
+        </div>
+      </div>
+    `).join("")}
+  </div>
+
+  <input
+    id="comment-${i}"
+    class="w-full p-2 bg-gray-800 border border-gray-700 rounded text-white"
+    placeholder="add a comment…"
+  />
+
+  <button
+    onclick="submitComment(${i})"
+    class="bg-white text-black px-3 py-1 rounded"
+  >
+    reply
+  </button>
+
+</div>
+`;
 
     feed.appendChild(card);
   });
