@@ -256,5 +256,9 @@ function renderPosts() {
 // =============================================================
 document.addEventListener("DOMContentLoaded", () => {
   applyStatus(localStorage.getItem("milkkit_status") || "online");
-  renderPosts();
+
+  // 🚫 DO NOT auto-render on post page
+  if (!IS_SINGLE_POST) {
+    renderPosts();
+  }
 });
