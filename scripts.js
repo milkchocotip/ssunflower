@@ -147,6 +147,36 @@ function submitInlinePost() {
 }
 
 // =============================================================
+// POST INTERACTIONS
+// =============================================================
+function clickPost(id) {
+  window.location.href = `post.html?id=${id}`;
+}
+
+function toggleLike(index) {
+  const post = posts[index];
+  post.likes ||= [];
+
+  const i = post.likes.indexOf(currentUser);
+  i === -1 ? post.likes.push(currentUser) : post.likes.splice(i, 1);
+
+  savePosts();
+  renderPosts();
+}
+
+function toggleBookmark(index) {
+  const post = posts[index];
+  post.bookmarks ||= [];
+
+  const i = post.bookmarks.indexOf(currentUser);
+  i === -1 ? post.bookmarks.push(currentUser) : post.bookmarks.splice(i, 1);
+
+  savePosts();
+  renderPosts();
+}
+
+
+// =============================================================
 // RENDER POSTS (FEED)
 // =============================================================
 function renderPosts() {
