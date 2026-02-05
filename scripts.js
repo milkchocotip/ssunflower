@@ -15,13 +15,21 @@ if (!currentUser && !isPublicPage) {
 }
 
 // =============================================================
-// GLOBAL STATE
+// GLOBAL STATE  (⚠️ MUST BE var, NOT let)
 // =============================================================
-let posts = JSON.parse(localStorage.getItem("milkkit_posts") || "[]");
+var posts = JSON.parse(localStorage.getItem("milkkit_posts") || "[]");
 let notifications = JSON.parse(localStorage.getItem("milkkit_notifs") || "[]");
 
 function savePosts() {
   localStorage.setItem("milkkit_posts", JSON.stringify(posts));
+}
+
+// =============================================================
+// LOGOUT
+// =============================================================
+function logout() {
+  localStorage.removeItem("milkkit_user");
+  window.location.href = "index.html";
 }
 
 // =============================================================
@@ -60,43 +68,9 @@ function formatTime(time) {
 }
 
 // =============================================================
-// COMPOSER
+// COMMENTS STATE
 // =============================================================
-function openComposer() {
-  document.getElementById("composerOverlay")?.classList.remove("hidden");
-}
-function closeComposer() {
-  document.getElementById("composerOverlay")?.classList.add("hidden");
-}
-
-function submitInlinePost() {
-  const titleEl = document.getElementById("inlineTitle");
-  const contentEl = document.getElementById("inlineContent");
-
-  const title = titleEl?.value.trim();
-  const content = contentEl?.value.trim();
-  if (!title || !content) return alert("fill everything out");
-
-  posts.unshift({
-    id: crypto.randomUUID(),
-    title,
-    raw: content,
-    content: marked.parse(content),
-    author: currentUser,
-    time: Date.now(),
-    comments: [],
-    likes: [],
-    bookmarks: [],
-    hidden: false
-  });
-
-  savePosts();
-  closeComposer();
-  renderPosts();
-
-  titleEl.value = "";
-  contentEl.value = "";
-}
+let openCommentIndex = null;
 
 // =============================================================
 // INTERACTIONS
@@ -117,16 +91,14 @@ function toggleBookmark(i) {
   renderPosts();
 }
 
-// =============================================================
-// COMMENTS
-// =============================================================
-let openCommentIndex = null;
-
 function toggleCommentBox(i) {
   openCommentIndex = openCommentIndex === i ? null : i;
   renderPosts();
 }
 
+// =============================================================
+// COMMENTS CRUD
+// =============================================================
 function submitComment(i) {
   const field = document.getElementById(`comment-${i}`);
   if (!field || !field.value.trim()) return;
@@ -173,7 +145,7 @@ function deleteComment(p, c) {
 }
 
 // =============================================================
-// POST MENU / EDIT / DELETE
+// POST MENU
 // =============================================================
 function togglePostMenu(i) {
   document
@@ -206,21 +178,10 @@ function saveEditPost(i) {
   renderPosts();
 }
 
-let pendingDeleteIndex = null;
-
 function deletePost(i) {
-  pendingDeleteIndex = i;
-  document.getElementById("deleteConfirm")?.classList.remove("hidden");
-}
-
-function confirmDelete(yes) {
-  document.getElementById("deleteConfirm")?.classList.add("hidden");
-  if (yes && pendingDeleteIndex !== null) {
-    posts.splice(pendingDeleteIndex, 1);
-    savePosts();
-    renderPosts();
-  }
-  pendingDeleteIndex = null;
+  posts.splice(i, 1);
+  savePosts();
+  renderPosts();
 }
 
 // =============================================================
@@ -230,14 +191,9 @@ function renderPosts() {
   const feed = document.getElementById("feed");
   if (!feed) return;
 
-  const filter = new URLSearchParams(location.search).get("filter");
   feed.innerHTML = "";
 
   posts.forEach((post, i) => {
-    if (post.hidden) return;
-    if (filter === "myposts" && post.author !== currentUser) return;
-    if (filter === "saved" && !post.bookmarks.includes(currentUser)) return;
-
     const card = document.createElement("div");
     card.className = "bg-gray-900 p-4 rounded-xl border border-gray-800";
 
@@ -247,103 +203,69 @@ function renderPosts() {
           <a href="post.html?id=${post.id}" class="text-xl font-bold hover:underline">${post.title}</a>
           <p class="text-xs text-gray-400">m/${post.author} • ${formatTime(post.time)}</p>
         </div>
+
+        ${post.author === currentUser ? `
+        <div class="relative">
+          <button onclick="togglePostMenu(${i})">⋯</button>
+          <div id="post-menu-${i}" class="hidden absolute right-0 bg-gray-800 border border-gray-700 rounded z-10">
+            <button onclick="startEditPost(${i})" class="block px-3 py-2 hover:bg-gray-700">edit</button>
+            <button onclick="deletePost(${i})" class="block px-3 py-2 text-red-400 hover:bg-gray-700">delete</button>
+          </div>
+        </div>` : ``}
       </div>
 
-      <div class="prose prose-invert my-3 whitespace-pre-wrap">${post.content}</div>
+      <div class="prose prose-invert my-3">${post.content}</div>
 
       <div class="flex justify-between pt-2">
         <button onclick="toggleCommentBox(${i})"
-          class="flex items-center gap-1 ${
-            openCommentIndex === i ? "text-white" : "text-gray-400 hover:text-white"
-          }">
-          ${icons.comment}<span class="text-sm">${post.comments.length}</span>
+          class="${openCommentIndex === i ? "text-white" : "text-gray-400 hover:text-white"}">
+          ${icons.comment} ${post.comments.length}
         </button>
 
         <button onclick="toggleLike(${i})"
-          class="flex items-center gap-1 ${
-            post.likes.includes(currentUser)
-              ? "text-white"
-              : "text-gray-400 hover:text-white"
-          }">
-          ${icons.like}<span class="text-sm">${post.likes.length}</span>
+          class="${post.likes.includes(currentUser) ? "text-white" : "text-gray-400 hover:text-white"}">
+          ${icons.like} ${post.likes.length}
         </button>
 
         <button onclick="toggleBookmark(${i})"
-          class="${
-            post.bookmarks.includes(currentUser)
-              ? "text-white"
-              : "text-gray-400 hover:text-white"
-          }">
-          ${
-            post.bookmarks.includes(currentUser)
-              ? icons.bookmarkFilled
-              : icons.bookmark
-          }
+          class="${post.bookmarks.includes(currentUser) ? "text-white" : "text-gray-400 hover:text-white"}">
+          ${post.bookmarks.includes(currentUser) ? icons.bookmarkFilled : icons.bookmark}
         </button>
 
-        <button onclick="navigator.clipboard.writeText(location.href)"
-          class="text-gray-400 hover:text-white">
+        <button onclick="navigator.clipboard.writeText(location.href)" class="text-gray-400 hover:text-white">
           ${icons.share}
         </button>
       </div>
 
-      <div id="comment-box-${i}" class="${openCommentIndex === i ? "" : "hidden"} mt-3">
+      <div class="${openCommentIndex === i ? "" : "hidden"} mt-3">
         ${post.comments.map((c, ci) => `
           <div class="border border-gray-800 rounded p-2 mb-2">
-            <div class="text-xs text-gray-400 flex justify-between">
+            <div class="flex justify-between text-xs text-gray-400">
               <span>m/${c.author} • ${formatTime(c.time)}</span>
+              ${c.author === currentUser ? `
+              <span>
+                <button onclick="startEditComment(${i},${ci})">edit</button>
+                <button onclick="deleteComment(${i},${ci})" class="text-red-400">delete</button>
+              </span>` : ``}
             </div>
-            <div class="prose prose-invert mt-2">${c.content}</div>
+
+            ${c._editing ? `
+              <textarea id="edit-comment-${i}-${ci}" class="w-full bg-gray-800 p-2 rounded">${c.raw}</textarea>
+              <button onclick="saveEditComment(${i},${ci})" class="bg-white text-black px-2 py-1 rounded mt-1">save</button>
+            ` : `
+              <div class="prose prose-invert mt-2">${c.content}</div>
+            `}
           </div>
         `).join("")}
 
         <input id="comment-${i}" class="w-full p-2 bg-gray-800 rounded" placeholder="add a comment…">
-        <button onclick="submitComment(${i})"
-          class="bg-white text-black px-3 py-1 rounded mt-1">
-          reply
-        </button>
+        <button onclick="submitComment(${i})" class="bg-white text-black px-3 py-1 rounded mt-1">reply</button>
       </div>
     `;
 
     feed.appendChild(card);
   });
 }
-
-// =============================================================
-// STATUS MENU
-// =============================================================
-document.addEventListener("DOMContentLoaded", () => {
-  const statusButton = document.getElementById("statusButton");
-  const statusMenu = document.getElementById("statusMenu");
-  const statusDot = document.getElementById("statusDot");
-  const sidebarStatus = document.getElementById("sidebarStatus");
-
-  if (!statusButton || !statusMenu || !statusDot) return;
-
-  const dotColors = {
-    online: "bg-green-500",
-    away: "bg-yellow-400",
-    dnd: "bg-red-600",
-    offline: "bg-gray-500"
-  };
-
-  statusButton.addEventListener("click", e => {
-    e.stopPropagation();
-    statusMenu.classList.toggle("hidden");
-  });
-
-  statusMenu.querySelectorAll("button[data-status]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const s = btn.dataset.status;
-      localStorage.setItem("milkkit_status", s);
-      statusDot.className = `w-3 h-3 rounded-full ${dotColors[s]}`;
-      if (sidebarStatus) sidebarStatus.textContent = s;
-      statusMenu.classList.add("hidden");
-    });
-  });
-
-  document.addEventListener("click", () => statusMenu.classList.add("hidden"));
-});
 
 // =============================================================
 // BOOT
