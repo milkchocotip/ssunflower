@@ -282,6 +282,72 @@ function confirmDelete(yes) {
 
   pendingDeleteIndex = null;
 }
+// =============================================================
+// STATUS MENU
+// =============================================================
+document.addEventListener("DOMContentLoaded", () => {
+  const statusButton = document.getElementById("statusButton");
+  const statusMenu = document.getElementById("statusMenu");
+  const statusDot = document.getElementById("statusDot");
+  const sidebarStatus = document.getElementById("sidebarStatus");
+
+  if (!statusButton || !statusMenu || !statusDot) return;
+
+  const dotColors = {
+    online: "bg-green-500",
+    away: "bg-yellow-400",
+    dnd: "bg-red-600",
+    offline: "bg-gray-500"
+  };
+
+  const ringColors = {
+    online: "ring-green-500",
+    away: "ring-yellow-400",
+    dnd: "ring-red-600",
+    offline: "ring-gray-500"
+  };
+
+  // toggle menu
+  statusButton.addEventListener("click", e => {
+    e.stopPropagation();
+    statusMenu.classList.toggle("hidden");
+  });
+
+  // select status
+  statusMenu.querySelectorAll("button[data-status]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const status = btn.dataset.status;
+
+      localStorage.setItem("milkkit_status", status);
+
+      statusDot.className =
+        "absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-gray-900 " +
+        dotColors[status];
+
+      statusButton.className =
+        "relative w-8 h-8 rounded-full bg-gray-700 cursor-pointer ring-2 " +
+        ringColors[status];
+
+      if (sidebarStatus) {
+        sidebarStatus.textContent = status;
+        sidebarStatus.className = "text-xs";
+      }
+
+      statusMenu.classList.add("hidden");
+    });
+  });
+
+  // restore saved status
+  const savedStatus = localStorage.getItem("milkkit_status") || "online";
+  statusDot.classList.add(dotColors[savedStatus]);
+  statusButton.classList.add(ringColors[savedStatus]);
+  if (sidebarStatus) sidebarStatus.textContent = savedStatus;
+
+  // close menu on outside click
+  document.addEventListener("click", () => {
+    statusMenu.classList.add("hidden");
+  });
+});
 
 // =============================================================
 // BOOT
