@@ -67,7 +67,6 @@ function closeComposer() {
 function submitInlinePost() {
   const titleEl = document.getElementById("inlineTitle");
   const contentEl = document.getElementById("inlineContent");
-  const overlay = document.getElementById("composerOverlay");
 
   const title = titleEl?.value.trim();
   const content = contentEl?.value.trim();
@@ -87,7 +86,7 @@ function submitInlinePost() {
   });
 
   savePosts();
-  overlay?.classList.add("hidden");
+  closeComposer();
   renderPosts();
 
   titleEl.value = "";
@@ -114,9 +113,14 @@ function toggleBookmark(i) {
 }
 
 // =============================================================
-// COMMENTS (FIXED)
+// COMMENTS
 // =============================================================
 let openCommentIndex = null;
+
+function toggleCommentBox(i) {
+  openCommentIndex = openCommentIndex === i ? null : i;
+  renderPosts();
+}
 
 function submitComment(i) {
   const field = document.getElementById(`comment-${i}`);
@@ -132,12 +136,86 @@ function submitComment(i) {
   savePosts();
   openCommentIndex = i;
   renderPosts();
+}
 
-  setTimeout(() => {
-    document
-      .getElementById(`comment-box-${i}`)
-      ?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, 50);
+function startEditComment(p, c) {
+  posts[p].comments[c]._editing = true;
+  renderPosts();
+}
+
+function cancelEditComment(p, c) {
+  delete posts[p].comments[c]._editing;
+  renderPosts();
+}
+
+function saveEditComment(p, c) {
+  const field = document.getElementById(`edit-comment-${p}-${c}`);
+  if (!field || !field.value.trim()) return;
+
+  posts[p].comments[c].raw = field.value;
+  posts[p].comments[c].content = marked.parse(field.value);
+  delete posts[p].comments[c]._editing;
+
+  savePosts();
+  renderPosts();
+}
+
+function deleteComment(p, c) {
+  posts[p].comments.splice(c, 1);
+  savePosts();
+  openCommentIndex = p;
+  renderPosts();
+}
+
+// =============================================================
+// POST MENU / EDIT / DELETE
+// =============================================================
+function togglePostMenu(i) {
+  document
+    .querySelectorAll("[id^='post-menu-']")
+    .forEach(m => m.classList.add("hidden"));
+  document.getElementById(`post-menu-${i}`)?.classList.toggle("hidden");
+}
+
+function startEditPost(i) {
+  posts[i]._editing = true;
+  renderPosts();
+}
+
+function cancelEditPost(i) {
+  delete posts[i]._editing;
+  renderPosts();
+}
+
+function saveEditPost(i) {
+  const t = document.getElementById(`edit-title-${i}`).value.trim();
+  const c = document.getElementById(`edit-content-${i}`).value.trim();
+  if (!t || !c) return alert("can’t be empty");
+
+  posts[i].title = t;
+  posts[i].raw = c;
+  posts[i].content = marked.parse(c);
+  delete posts[i]._editing;
+
+  savePosts();
+  renderPosts();
+}
+
+let pendingDeleteIndex = null;
+
+function deletePost(i) {
+  pendingDeleteIndex = i;
+  document.getElementById("deleteConfirm")?.classList.remove("hidden");
+}
+
+function confirmDelete(yes) {
+  document.getElementById("deleteConfirm")?.classList.add("hidden");
+  if (yes && pendingDeleteIndex !== null) {
+    posts.splice(pendingDeleteIndex, 1);
+    savePosts();
+    renderPosts();
+  }
+  pendingDeleteIndex = null;
 }
 
 // =============================================================
@@ -158,90 +236,63 @@ function renderPosts() {
     const card = document.createElement("div");
     card.className = "bg-gray-900 p-4 rounded-xl border border-gray-800";
 
-    card.innerHTML = post._editing
-      ? `
-        <input id="edit-title-${i}" class="w-full p-2 mb-2 bg-gray-800 rounded" value="${post.title}" />
-        <textarea id="edit-content-${i}" rows="6" class="w-full p-2 bg-gray-800 rounded">${post.raw}</textarea>
-        <div class="flex gap-2 mt-2">
-          <button onclick="saveEditPost(${i})" class="px-3 py-1 bg-white text-black rounded">save</button>
-          <button onclick="cancelEditPost(${i})" class="px-3 py-1 bg-gray-700 rounded">cancel</button>
+    card.innerHTML = post._editing ? `
+      <input id="edit-title-${i}" class="w-full p-2 mb-2 bg-gray-800 rounded" value="${post.title}">
+      <textarea id="edit-content-${i}" class="w-full p-2 bg-gray-800 rounded">${post.raw}</textarea>
+      <div class="flex gap-2 mt-2">
+        <button onclick="saveEditPost(${i})" class="bg-white text-black px-3 py-1 rounded">save</button>
+        <button onclick="cancelEditPost(${i})" class="bg-gray-700 px-3 py-1 rounded">cancel</button>
+      </div>
+    ` : `
+      <div class="flex justify-between">
+        <div>
+          <a href="post.html?id=${post.id}" class="text-xl font-bold hover:underline">${post.title}</a>
+          <p class="text-xs text-gray-400">m/${post.author} • ${formatTime(post.time)}</p>
         </div>
-      `
-      : `
-        <div class="flex justify-between">
-          <div>
-            <a href="post.html?id=${post.id}" class="text-xl font-bold hover:underline">${post.title}</a>
-            <p class="text-xs text-gray-400">m/${post.author} • ${formatTime(post.time)}</p>
+        ${post.author === currentUser ? `
+        <div class="relative">
+          <button onclick="togglePostMenu(${i})">⋯</button>
+          <div id="post-menu-${i}" class="hidden absolute right-0 bg-gray-800 border border-gray-700 rounded">
+            <button onclick="startEditPost(${i})" class="block px-3 py-2">edit</button>
+            <button onclick="deletePost(${i})" class="block px-3 py-2 text-red-400">delete</button>
           </div>
+        </div>` : ``}
+      </div>
 
-          ${post.author === currentUser ? `
-          <div class="relative">
-            <button onclick="togglePostMenu(${i})">⋯</button>
-            <div id="post-menu-${i}" class="hidden absolute right-0 bg-gray-800 rounded border border-gray-700 z-10">
-              <button onclick="startEditPost(${i})" class="block w-full text-left px-3 py-2 hover:bg-gray-700">edit</button>
-              <button onclick="deletePost(${i})" class="block w-full text-left px-3 py-2 text-red-400 hover:bg-gray-700">delete</button>
+      <div class="prose prose-invert my-3 whitespace-pre-wrap">${post.content}</div>
+
+      <div class="flex justify-between text-gray-400">
+        <button onclick="toggleCommentBox(${i})">${icons.comment} ${post.comments.length}</button>
+        <button onclick="toggleLike(${i})">${icons.like} ${post.likes.length}</button>
+        <button onclick="toggleBookmark(${i})">${icons.bookmark}</button>
+        <button onclick="navigator.clipboard.writeText(location.href)">${icons.share}</button>
+      </div>
+
+      <div id="comment-box-${i}" class="${openCommentIndex === i ? '' : 'hidden'} mt-3">
+        ${post.comments.map((c, ci) => `
+          <div class="border border-gray-800 rounded p-2 mb-2">
+            <div class="text-xs text-gray-400 flex justify-between">
+              <span>m/${c.author} • ${formatTime(c.time)}</span>
+              ${c.author === currentUser ? `
+                <span>
+                  <button onclick="startEditComment(${i},${ci})">edit</button>
+                  <button onclick="deleteComment(${i},${ci})" class="text-red-400">delete</button>
+                </span>` : ``}
             </div>
-          </div>` : ``}
-        </div>
-
-        <div class="prose prose-invert my-3 whitespace-pre-wrap">${post.content}</div>
-
-        <div class="flex items-center justify-between text-gray-400 pt-2">
-          <button onclick="toggleCommentBox(${i})" class="flex items-center gap-1 hover:text-white">
-            ${icons.comment}<span class="text-sm">${post.comments.length}</span>
-          </button>
-
-          <button onclick="toggleLike(${i})"
-            class="flex items-center gap-1 ${post.likes.includes(currentUser) ? 'text-white' : 'hover:text-white'}">
-            ${icons.like}<span class="text-sm">${post.likes.length}</span>
-          </button>
-
-          <button onclick="toggleBookmark(${i})"
-            class="${post.bookmarks.includes(currentUser) ? 'text-white' : 'hover:text-white'}">
-            ${icons.bookmark}
-          </button>
-
-          <button onclick="navigator.clipboard.writeText(location.href)" class="hover:text-white">
-            ${icons.share}
-          </button>
-        </div>
-
-        <div id="comment-box-${i}" class="${openCommentIndex === i ? '' : 'hidden'} mt-3 space-y-3">
-          <div class="space-y-2">
-            ${post.comments.map((c, ci) => `
-              <div class="text-sm border border-gray-800 rounded p-2">
-                <div class="flex justify-between text-xs text-gray-400">
-                  <span>m/${c.author} • ${formatTime(c.time)}</span>
-                  ${c.author === currentUser ? `
-                    <span class="flex gap-2">
-                      <button onclick="startEditComment(${i},${ci})">edit</button>
-                      <button class="text-red-400" onclick="deleteComment(${i},${ci})">delete</button>
-                    </span>
-                  ` : ``}
-                </div>
-
-                ${c._editing ? `
-                  <textarea id="edit-comment-${i}-${ci}" class="w-full mt-2 p-2 bg-gray-800 rounded">${c.raw}</textarea>
-                  <div class="flex gap-2 mt-2">
-                    <button onclick="saveEditComment(${i},${ci})" class="px-3 py-1 bg-white text-black rounded">save</button>
-                    <button onclick="cancelEditComment(${i},${ci})" class="px-3 py-1 bg-gray-700 rounded">cancel</button>
-                  </div>
-                ` : `
-                  <div class="prose prose-invert whitespace-pre-wrap mt-2">${c.content}</div>
-                `}
-              </div>
-            `).join("")}
+            ${c._editing ? `
+              <textarea id="edit-comment-${i}-${ci}" class="w-full p-2 bg-gray-800 rounded">${c.raw}</textarea>
+              <button onclick="saveEditComment(${i},${ci})" class="bg-white text-black px-2 py-1 rounded mt-1">save</button>
+            ` : `<div class="prose prose-invert mt-2">${c.content}</div>`}
           </div>
-
-          <input id="comment-${i}" class="w-full p-2 bg-gray-800 border border-gray-700 rounded" placeholder="add a comment…" />
-          <button onclick="submitComment(${i})" class="bg-white text-black px-3 py-1 rounded">reply</button>
-        </div>
-      `;
+        `).join("")}
+        <input id="comment-${i}" class="w-full p-2 bg-gray-800 rounded" placeholder="add a comment…">
+        <button onclick="submitComment(${i})" class="bg-white text-black px-3 py-1 rounded mt-1">reply</button>
+      </div>
+    `;
 
     feed.appendChild(card);
   });
 }
-
 
 // =============================================================
 // STATUS MENU
