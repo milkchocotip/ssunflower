@@ -15,10 +15,9 @@ if (!currentUser && !isPublicPage) {
 }
 
 // =============================================================
-// GLOBAL STATE  (⚠️ MUST BE var, NOT let)
+// GLOBAL STATE (must be var)
 // =============================================================
 var posts = JSON.parse(localStorage.getItem("milkkit_posts") || "[]");
-let notifications = JSON.parse(localStorage.getItem("milkkit_notifs") || "[]");
 
 function savePosts() {
   localStorage.setItem("milkkit_posts", JSON.stringify(posts));
@@ -36,15 +35,15 @@ function logout() {
 // ICONS
 // =============================================================
 const icons = {
-  comment: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h6m-2 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>`,
+  comment: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h6m-2 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>`,
 
-  like: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" /></svg>`,
+  like: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>`,
 
-  bookmark: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z" /></svg>`,
+  bookmark: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/></svg>`,
 
   bookmarkFilled: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M6 2a2 2 0 00-2 2v18l8-5 8 5V4a2 2 0 00-2-2H6z"/></svg>`,
 
-  share: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 8l4-4m0 0l-4-4m4 4H9" /></svg>`
+  share: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 8l4-4m0 0l-4-4m4 4H9"/></svg>`
 };
 
 // =============================================================
@@ -58,23 +57,59 @@ marked.setOptions({ breaks: true });
 function formatTime(time) {
   const diff = Date.now() - time;
   const min = Math.floor(diff / 60000);
-  const hr = Math.floor(min / 60);
-  const day = Math.floor(hr / 24);
   if (min < 1) return "just now";
-  if (min < 60) return min + "m ago";
-  if (hr < 24) return hr + "h ago";
-  if (day < 7) return day + "d ago";
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
   return new Date(time).toLocaleDateString();
 }
 
 // =============================================================
-// COMMENTS STATE
+// COMPOSER
 // =============================================================
-let openCommentIndex = null;
+function openComposer() {
+  document.getElementById("composerOverlay")?.classList.remove("hidden");
+}
+
+function closeComposer() {
+  document.getElementById("composerOverlay")?.classList.add("hidden");
+}
+
+function submitInlinePost() {
+  const titleEl = document.getElementById("inlineTitle");
+  const contentEl = document.getElementById("inlineContent");
+
+  if (!titleEl || !contentEl) return;
+
+  const title = titleEl.value.trim();
+  const content = contentEl.value.trim();
+  if (!title || !content) return alert("fill everything out");
+
+  posts.unshift({
+    id: crypto.randomUUID(),
+    title,
+    raw: content,
+    content: marked.parse(content),
+    author: currentUser,
+    time: Date.now(),
+    comments: [],
+    likes: [],
+    bookmarks: []
+  });
+
+  savePosts();
+  closeComposer();
+  renderPosts();
+
+  titleEl.value = "";
+  contentEl.value = "";
+}
 
 // =============================================================
 // INTERACTIONS
 // =============================================================
+let openCommentIndex = null;
+
 function toggleLike(i) {
   const l = posts[i].likes;
   const idx = l.indexOf(currentUser);
@@ -97,7 +132,7 @@ function toggleCommentBox(i) {
 }
 
 // =============================================================
-// COMMENTS CRUD
+// COMMENTS
 // =============================================================
 function submitComment(i) {
   const field = document.getElementById(`comment-${i}`);
@@ -120,11 +155,6 @@ function startEditComment(p, c) {
   renderPosts();
 }
 
-function cancelEditComment(p, c) {
-  delete posts[p].comments[c]._editing;
-  renderPosts();
-}
-
 function saveEditComment(p, c) {
   const field = document.getElementById(`edit-comment-${p}-${c}`);
   if (!field || !field.value.trim()) return;
@@ -132,7 +162,6 @@ function saveEditComment(p, c) {
   posts[p].comments[c].raw = field.value;
   posts[p].comments[c].content = marked.parse(field.value);
   delete posts[p].comments[c]._editing;
-
   savePosts();
   renderPosts();
 }
@@ -159,21 +188,15 @@ function startEditPost(i) {
   renderPosts();
 }
 
-function cancelEditPost(i) {
-  delete posts[i]._editing;
-  renderPosts();
-}
-
 function saveEditPost(i) {
   const t = document.getElementById(`edit-title-${i}`).value.trim();
   const c = document.getElementById(`edit-content-${i}`).value.trim();
-  if (!t || !c) return alert("can’t be empty");
+  if (!t || !c) return;
 
   posts[i].title = t;
   posts[i].raw = c;
   posts[i].content = marked.parse(c);
   delete posts[i]._editing;
-
   savePosts();
   renderPosts();
 }
@@ -206,59 +229,54 @@ function renderPosts() {
 
         ${post.author === currentUser ? `
         <div class="relative">
-          <button onclick="togglePostMenu(${i})">⋯</button>
+          <button onclick="event.stopPropagation(); togglePostMenu(${i})">⋯</button>
           <div id="post-menu-${i}" class="hidden absolute right-0 bg-gray-800 border border-gray-700 rounded z-10">
-            <button onclick="startEditPost(${i})" class="block px-3 py-2 hover:bg-gray-700">edit</button>
-            <button onclick="deletePost(${i})" class="block px-3 py-2 text-red-400 hover:bg-gray-700">delete</button>
+            <button onclick="startEditPost(${i})" class="block px-3 py-2">edit</button>
+            <button onclick="deletePost(${i})" class="block px-3 py-2 text-red-400">delete</button>
           </div>
         </div>` : ``}
       </div>
 
       <div class="prose prose-invert my-3">${post.content}</div>
 
-      <div class="flex justify-between pt-2">
-        <button onclick="toggleCommentBox(${i})"
-          class="${openCommentIndex === i ? "text-white" : "text-gray-400 hover:text-white"}">
+      <div class="flex justify-between pt-2 text-gray-400">
+        <button onclick="toggleCommentBox(${i})" class="${openCommentIndex===i?'text-white':''}">
           ${icons.comment} ${post.comments.length}
         </button>
 
-        <button onclick="toggleLike(${i})"
-          class="${post.likes.includes(currentUser) ? "text-white" : "text-gray-400 hover:text-white"}">
+        <button onclick="toggleLike(${i})" class="${post.likes.includes(currentUser)?'text-white':''}">
           ${icons.like} ${post.likes.length}
         </button>
 
-        <button onclick="toggleBookmark(${i})"
-          class="${post.bookmarks.includes(currentUser) ? "text-white" : "text-gray-400 hover:text-white"}">
-          ${post.bookmarks.includes(currentUser) ? icons.bookmarkFilled : icons.bookmark}
+        <button onclick="toggleBookmark(${i})" class="${post.bookmarks.includes(currentUser)?'text-white':''}">
+          ${post.bookmarks.includes(currentUser)?icons.bookmarkFilled:icons.bookmark}
         </button>
 
-        <button onclick="navigator.clipboard.writeText(location.href)" class="text-gray-400 hover:text-white">
+        <button onclick="navigator.clipboard.writeText(location.href)">
           ${icons.share}
         </button>
       </div>
 
-      <div class="${openCommentIndex === i ? "" : "hidden"} mt-3">
-        ${post.comments.map((c, ci) => `
-          <div class="border border-gray-800 rounded p-2 mb-2">
+      <div class="${openCommentIndex===i?'':'hidden'} mt-3">
+        ${post.comments.map((c,ci)=>`
+          <div class="border border-gray-800 p-2 rounded mb-2">
             <div class="flex justify-between text-xs text-gray-400">
               <span>m/${c.author} • ${formatTime(c.time)}</span>
-              ${c.author === currentUser ? `
-              <span>
-                <button onclick="startEditComment(${i},${ci})">edit</button>
-                <button onclick="deleteComment(${i},${ci})" class="text-red-400">delete</button>
-              </span>` : ``}
+              ${c.author===currentUser?`
+                <span>
+                  <button onclick="startEditComment(${i},${ci})">edit</button>
+                  <button onclick="deleteComment(${i},${ci})" class="text-red-400">delete</button>
+                </span>`:''}
             </div>
 
-            ${c._editing ? `
+            ${c._editing?`
               <textarea id="edit-comment-${i}-${ci}" class="w-full bg-gray-800 p-2 rounded">${c.raw}</textarea>
               <button onclick="saveEditComment(${i},${ci})" class="bg-white text-black px-2 py-1 rounded mt-1">save</button>
-            ` : `
-              <div class="prose prose-invert mt-2">${c.content}</div>
-            `}
+            `:`<div class="prose prose-invert mt-2">${c.content}</div>`}
           </div>
         `).join("")}
 
-        <input id="comment-${i}" class="w-full p-2 bg-gray-800 rounded" placeholder="add a comment…">
+        <input id="comment-${i}" class="w-full p-2 bg-gray-800 rounded" placeholder="add a comment…" />
         <button onclick="submitComment(${i})" class="bg-white text-black px-3 py-1 rounded mt-1">reply</button>
       </div>
     `;
@@ -266,34 +284,6 @@ function renderPosts() {
     feed.appendChild(card);
   });
 }
-
-// =============================================================
-// STATUS MENU
-// =============================================================
-document.addEventListener("DOMContentLoaded", () => {
-  const statusButton = document.getElementById("statusButton");
-  const statusMenu = document.getElementById("statusMenu");
-  const statusDot = document.getElementById("statusDot");
-
-  if (!statusButton || !statusMenu) return;
-
-  statusButton.addEventListener("click", e => {
-    e.stopPropagation();
-    statusMenu.classList.toggle("hidden");
-  });
-
-  statusMenu.querySelectorAll("button[data-status]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const s = btn.dataset.status;
-      localStorage.setItem("milkkit_status", s);
-      if (statusDot) statusDot.className = `w-3 h-3 rounded-full`;
-      statusMenu.classList.add("hidden");
-    });
-  });
-
-  document.addEventListener("click", () => statusMenu.classList.add("hidden"));
-});
-
 
 // =============================================================
 // BOOT
