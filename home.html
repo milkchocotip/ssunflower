@@ -11,12 +11,19 @@
 
 <body class="bg-black text-white min-h-screen flex flex-col">
 
-  <!-- NAVBAR -->
-  <nav class="w-full flex flex-wrap items-center justify-between gap-4 p-4 bg-gray-900 shadow-lg">
+  <!-- NAVBAR (STICKY) -->
+  <nav class="w-full flex items-center justify-between gap-2 p-3 sm:p-4 bg-gray-900/90 backdrop-blur shadow-lg sticky top-0 z-50">
 
-    <!-- LOGO -->
-    <div class="flex-shrink-0">
-      <a href="home.html">
+    <!-- LEFT TOGGLE + LOGO -->
+    <div class="flex items-center gap-3">
+      <button
+        id="sidebarToggle"
+        onclick="toggleSidebar()"
+        class="md:hidden text-gray-300 hover:text-white text-2xl leading-none"
+        aria-label="toggle menu"
+      >☰</button>
+
+      <a href="home.html" class="flex-shrink-0">
         <img src="logo.png" class="h-16 object-contain cursor-pointer" />
       </a>
     </div>
@@ -26,7 +33,7 @@
       id="searchBar"
       type="text"
       placeholder="search"
-      class="p-2 rounded-lg bg-gray-800 text-white w-full sm:w-1/2"
+      class="hidden sm:block p-2 rounded-lg bg-gray-800 text-white w-1/2"
     />
 
     <!-- RIGHT SIDE -->
@@ -81,10 +88,13 @@
   </nav>
 
   <!-- MAIN -->
-  <div class="flex w-full">
+  <div class="flex w-full relative">
 
     <!-- SIDEBAR -->
-    <aside class="hidden md:flex flex-col w-64 p-6 border-r border-gray-800 bg-black/30 sticky top-20 h-[calc(100vh-80px)]">
+    <aside
+      id="sidebar"
+      class="fixed md:sticky top-0 md:top-24 left-0 z-40 h-full md:h-[calc(100vh-96px)] w-64 p-6 border-r border-gray-800 bg-black/90 md:bg-black/30 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-out"
+    >
 
       <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 mb-6">
         <div class="flex items-center gap-3">
@@ -104,19 +114,25 @@
 
     </aside>
 
-    <main id="feed" class="flex-1 p-4 sm:p-6 space-y-6 overflow-auto"></main>
+    <main id="feed" class="flex-1 p-3 sm:p-6 space-y-4 sm:space-y-6 overflow-auto"></main>
   </div>
 
   <!-- COMPOSER OVERLAY -->
   <div
     id="composerOverlay"
+    onclick="if(event.target.id==='composerOverlay') closeComposer()"
     class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center"
   >
-    <div class="bg-gray-900 border border-gray-800 rounded-xl w-full max-w-2xl p-6 space-y-4">
+    <div class="relative bg-gray-900 border border-gray-800 rounded-xl w-full h-full sm:h-auto sm:max-w-2xl p-4 sm:p-6 space-y-4 overflow-auto">
+
+      <button
+        onclick="closeComposer()"
+        class="absolute top-3 right-3 text-gray-400 hover:text-white text-xl leading-none"
+        aria-label="close composer"
+      >✕</button>
 
       <div class="flex justify-between items-center">
         <h2 class="text-lg font-semibold">create post</h2>
-        <button onclick="closeComposer()" class="text-gray-400 hover:text-white">✕</button>
       </div>
 
       <input
@@ -140,12 +156,8 @@
       </div>
 
       <div class="flex justify-end gap-2 pt-2">
-        <button onclick="closeComposer()" class="px-4 py-2 bg-gray-800 rounded">
-          cancel
-        </button>
-        <button onclick="submitInlinePost()" class="px-4 py-2 bg-white text-black rounded">
-          post
-        </button>
+        <button onclick="closeComposer()" class="px-4 py-2 bg-gray-800 rounded">cancel</button>
+        <button onclick="submitInlinePost()" class="px-4 py-2 bg-white text-black rounded">post</button>
       </div>
 
     </div>
@@ -162,6 +174,22 @@
     function goHome() { window.location.href = "home.html"; }
     function goMyPosts() { window.location.href = "home.html?filter=myposts"; }
     function goSaved() { window.location.href = "home.html?filter=saved"; }
+
+    function toggleSidebar() {
+      const sb = document.getElementById('sidebar');
+      sb.classList.toggle('-translate-x-full');
+    }
+
+    // close sidebar on outside click (mobile only)
+    document.addEventListener('click', e => {
+      const sb = document.getElementById('sidebar');
+      const btn = document.getElementById('sidebarToggle');
+      if (!sb || !btn) return;
+      if (window.innerWidth >= 768) return;
+      if (!sb.contains(e.target) && !btn.contains(e.target)) {
+        sb.classList.add('-translate-x-full');
+      }
+    });
   </script>
 
 </body>
