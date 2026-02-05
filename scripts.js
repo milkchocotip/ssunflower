@@ -15,32 +15,23 @@ if (!currentUser && !isPublicPage) {
 }
 
 // =============================================================
-// GLOBAL STATE
+// RENDER MODE
+// =============================================================
+const IS_SINGLE_POST = location.pathname.includes("post.html");
+
+// =============================================================
+// GLOBAL STATE  (MUST BE var)
 // =============================================================
 var posts = JSON.parse(localStorage.getItem("milkkit_posts") || "[]");
-var users = JSON.parse(localStorage.getItem("milkkit_users") || "{}");
 
 function savePosts() {
   localStorage.setItem("milkkit_posts", JSON.stringify(posts));
-}
-function saveUsers() {
-  localStorage.setItem("milkkit_users", JSON.stringify(users));
-}
-
-if (currentUser && !users[currentUser]) {
-  users[currentUser] = { status: "online", lastSeen: Date.now() };
-  saveUsers();
 }
 
 // =============================================================
 // LOGOUT
 // =============================================================
 function logout() {
-  if (users[currentUser]) {
-    users[currentUser].status = "offline";
-    users[currentUser].lastSeen = Date.now();
-    saveUsers();
-  }
   localStorage.removeItem("milkkit_user");
   window.location.href = "index.html";
 }
@@ -49,30 +40,21 @@ function logout() {
 // ICONS
 // =============================================================
 const icons = {
-  comment: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h6m-2 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>`,
-  like: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" /></svg>`,
-  bookmark: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z" /></svg>`,
-  bookmarkFilled: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M6 2a2 2 0 00-2 2v18l8-5 8 5V4a2 2 0 00-2-2H6z"/></svg>`
+  comment: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M7 8h10M7 12h6m-2 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>`,
+
+  like: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M5 15l7-7 7 7"/></svg>`,
+
+  bookmark: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/></svg>`,
+
+  bookmarkFilled: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M6 2a2 2 0 00-2 2v18l8-5 8 5V4a2 2 0 00-2-2H6z"/></svg>`,
+
+  share: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M15 8l4-4m0 0l-4-4m4 4H9"/></svg>`
 };
 
 // =============================================================
 // MARKDOWN
 // =============================================================
 marked.setOptions({ breaks: true });
-
-// =============================================================
-// PREVIEW HELPER
-// =============================================================
-function getPreview(html, maxChars = 280) {
-  const text = html.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
-  if (text.length <= maxChars) {
-    return { preview: html, truncated: false };
-  }
-  return {
-    preview: text.slice(0, maxChars) + "…",
-    truncated: true
-  };
-}
 
 // =============================================================
 // TIME
@@ -83,31 +65,65 @@ function formatTime(time) {
   const hr = Math.floor(min / 60);
   const day = Math.floor(hr / 24);
   if (min < 1) return "just now";
-  if (min < 60) return min + "m ago";
-  if (hr < 24) return hr + "h ago";
-  if (day < 7) return day + "d ago";
+  if (min < 60) return `${min}m ago`;
+  if (hr < 24) return `${hr}h ago`;
+  if (day < 7) return `${day}d ago`;
   return new Date(time).toLocaleDateString();
 }
 
 // =============================================================
-// INTERACTIONS
+// PREVIEW HELPER (FEED ONLY)
+// =============================================================
+function getPreview(html, lines = 3) {
+  const el = document.createElement("div");
+  el.innerHTML = html;
+  const text = el.innerText.trim();
+  const split = text.split("\n").filter(Boolean);
+
+  if (split.length <= lines) return html;
+  return split.slice(0, lines).join("\n") + "…";
+}
+
+// =============================================================
+// STATUS
+// =============================================================
+function applyStatus(status) {
+  localStorage.setItem("milkkit_status", status);
+
+  const dot = document.getElementById("statusDot");
+  const sidebar = document.getElementById("sidebarStatus");
+
+  const colors = {
+    online: "bg-green-500",
+    away: "bg-yellow-400",
+    dnd: "bg-red-600",
+    offline: "bg-gray-500"
+  };
+
+  if (dot) dot.className = `absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-gray-900 ${colors[status]}`;
+  if (sidebar) sidebar.textContent = status;
+}
+
+// =============================================================
+// COMMENTS STATE
 // =============================================================
 let openCommentIndex = null;
 
+// =============================================================
+// INTERACTIONS
+// =============================================================
 function toggleLike(i) {
   const l = posts[i].likes;
   const idx = l.indexOf(currentUser);
   idx === -1 ? l.push(currentUser) : l.splice(idx, 1);
-  savePosts();
-  renderPosts();
+  savePosts(); renderPosts();
 }
 
 function toggleBookmark(i) {
   const b = posts[i].bookmarks;
   const idx = b.indexOf(currentUser);
   idx === -1 ? b.push(currentUser) : b.splice(idx, 1);
-  savePosts();
-  renderPosts();
+  savePosts(); renderPosts();
 }
 
 function toggleCommentBox(i) {
@@ -116,7 +132,47 @@ function toggleCommentBox(i) {
 }
 
 // =============================================================
-// POST MENU (⋯)
+// COMMENTS CRUD
+// =============================================================
+function submitComment(i) {
+  const field = document.getElementById(`comment-${i}`);
+  if (!field?.value.trim()) return;
+
+  posts[i].comments.push({
+    author: currentUser,
+    raw: field.value,
+    content: marked.parse(field.value),
+    time: Date.now()
+  });
+
+  savePosts();
+  openCommentIndex = i;
+  renderPosts();
+}
+
+function startEditComment(p, c) {
+  posts[p].comments[c]._editing = true;
+  renderPosts();
+}
+
+function saveEditComment(p, c) {
+  const field = document.getElementById(`edit-comment-${p}-${c}`);
+  if (!field?.value.trim()) return;
+
+  posts[p].comments[c].raw = field.value;
+  posts[p].comments[c].content = marked.parse(field.value);
+  delete posts[p].comments[c]._editing;
+
+  savePosts(); renderPosts();
+}
+
+function deleteComment(p, c) {
+  posts[p].comments.splice(c, 1);
+  savePosts(); renderPosts();
+}
+
+// =============================================================
+// POST MENU
 // =============================================================
 function togglePostMenu(i) {
   document.querySelectorAll("[id^='post-menu-']").forEach(m => m.classList.add("hidden"));
@@ -128,64 +184,36 @@ function startEditPost(i) {
   renderPosts();
 }
 
-function cancelEditPost(i) {
-  delete posts[i]._editing;
-  renderPosts();
-}
-
 function saveEditPost(i) {
-  const title = document.getElementById(`edit-title-${i}`).value.trim();
-  const body = document.getElementById(`edit-body-${i}`).value.trim();
-  if (!title || !body) return alert("cannot be empty");
+  const t = document.getElementById(`edit-title-${i}`).value.trim();
+  const c = document.getElementById(`edit-content-${i}`).value.trim();
+  if (!t || !c) return;
 
-  posts[i].title = title;
-  posts[i].raw = body;
-  posts[i].content = marked.parse(body);
+  posts[i].title = t;
+  posts[i].raw = c;
+  posts[i].content = marked.parse(c);
   delete posts[i]._editing;
 
-  savePosts();
-  renderPosts();
+  savePosts(); renderPosts();
 }
 
 function deletePost(i) {
-  if (!confirm("delete this post?")) return;
   posts.splice(i, 1);
-  savePosts();
-  renderPosts();
+  savePosts(); renderPosts();
 }
 
 // =============================================================
-// RENDER FEED
+// RENDER
 // =============================================================
 function renderPosts() {
   const feed = document.getElementById("feed");
   if (!feed) return;
 
-  const filter = new URLSearchParams(location.search).get("filter");
   feed.innerHTML = "";
 
   posts.forEach((post, i) => {
-    if (filter === "myposts" && post.author !== currentUser) return;
-    if (filter === "saved" && !post.bookmarks.includes(currentUser)) return;
-
     const card = document.createElement("div");
     card.className = "bg-gray-900 p-4 rounded-xl border border-gray-800";
-
-    // EDIT MODE
-    if (post._editing) {
-      card.innerHTML = `
-        <input id="edit-title-${i}" class="w-full bg-gray-800 p-2 rounded mb-2" value="${post.title}">
-        <textarea id="edit-body-${i}" class="w-full bg-gray-800 p-2 rounded h-40">${post.raw}</textarea>
-        <div class="flex gap-2 justify-end mt-2">
-          <button onclick="cancelEditPost(${i})" class="px-3 py-1 bg-gray-700 rounded">cancel</button>
-          <button onclick="saveEditPost(${i})" class="px-3 py-1 bg-white text-black rounded">save</button>
-        </div>
-      `;
-      feed.appendChild(card);
-      return;
-    }
-
-    const { preview, truncated } = getPreview(post.content);
 
     card.innerHTML = `
       <div class="flex justify-between">
@@ -195,23 +223,70 @@ function renderPosts() {
         </div>
 
         ${post.author === currentUser ? `
-          <div class="relative">
-            <button onclick="togglePostMenu(${i})" class="text-xl">⋯</button>
-            <div id="post-menu-${i}" class="hidden absolute right-0 bg-gray-800 border border-gray-700 rounded z-10">
-              <button onclick="startEditPost(${i})" class="block px-3 py-2 hover:bg-gray-700">edit</button>
-              <button onclick="deletePost(${i})" class="block px-3 py-2 text-red-400 hover:bg-gray-700">delete</button>
-            </div>
+        <div class="relative">
+          <button onclick="togglePostMenu(${i})">⋯</button>
+          <div id="post-menu-${i}" class="hidden absolute right-0 bg-gray-800 border border-gray-700 rounded z-10">
+            <button onclick="startEditPost(${i})" class="block px-3 py-2 hover:bg-gray-700">edit</button>
+            <button onclick="deletePost(${i})" class="block px-3 py-2 text-red-400 hover:bg-gray-700">delete</button>
           </div>
-        ` : ``}
+        </div>` : ``}
       </div>
 
-      <div class="prose prose-invert my-3">${preview}</div>
-      ${truncated ? `<a href="post.html?id=${post.id}" class="text-sm text-gray-400 hover:text-white">see more…</a>` : ""}
+      <div class="prose prose-invert my-3 whitespace-pre-wrap">
+        ${
+          IS_SINGLE_POST
+            ? post.content
+            : getPreview(post.content)
+        }
 
-      <div class="flex justify-between pt-2 text-gray-400">
-        <button onclick="toggleCommentBox(${i})">${icons.comment} ${post.comments.length}</button>
-        <button onclick="toggleLike(${i})">${icons.like} ${post.likes.length}</button>
-        <button onclick="toggleBookmark(${i})">${post.bookmarks.includes(currentUser) ? icons.bookmarkFilled : icons.bookmark}</button>
+        ${
+          !IS_SINGLE_POST && post.content.split("\n").length > 3
+            ? `<a href="post.html?id=${post.id}" class="text-sm text-gray-400 hover:text-white block mt-2">see more…</a>`
+            : ""
+        }
+      </div>
+
+      <div class="flex justify-between pt-2">
+        <button onclick="toggleCommentBox(${i})" class="${openCommentIndex === i ? "text-white" : "text-gray-400 hover:text-white"}">
+          ${icons.comment} ${post.comments.length}
+        </button>
+
+        <button onclick="toggleLike(${i})" class="${post.likes.includes(currentUser) ? "text-white" : "text-gray-400 hover:text-white"}">
+          ${icons.like} ${post.likes.length}
+        </button>
+
+        <button onclick="toggleBookmark(${i})" class="${post.bookmarks.includes(currentUser) ? "text-white" : "text-gray-400 hover:text-white"}">
+          ${post.bookmarks.includes(currentUser) ? icons.bookmarkFilled : icons.bookmark}
+        </button>
+
+        <button onclick="navigator.clipboard.writeText(location.origin + '/post.html?id=${post.id}')" class="text-gray-400 hover:text-white">
+          ${icons.share}
+        </button>
+      </div>
+
+      <div class="${openCommentIndex === i ? "" : "hidden"} mt-3">
+        ${post.comments.map((c, ci) => `
+          <div class="border border-gray-800 rounded p-2 mb-2">
+            <div class="flex justify-between text-xs text-gray-400">
+              <span>m/${c.author} • ${formatTime(c.time)}</span>
+              ${c.author === currentUser ? `
+              <span>
+                <button onclick="startEditComment(${i},${ci})">edit</button>
+                <button onclick="deleteComment(${i},${ci})" class="text-red-400">delete</button>
+              </span>` : ``}
+            </div>
+
+            ${c._editing ? `
+              <textarea id="edit-comment-${i}-${ci}" class="w-full bg-gray-800 p-2 rounded">${c.raw}</textarea>
+              <button onclick="saveEditComment(${i},${ci})" class="bg-white text-black px-2 py-1 rounded mt-1">save</button>
+            ` : `
+              <div class="prose prose-invert mt-2">${c.content}</div>
+            `}
+          </div>
+        `).join("")}
+
+        <input id="comment-${i}" class="w-full p-2 bg-gray-800 rounded" placeholder="add a comment…">
+        <button onclick="submitComment(${i})" class="bg-white text-black px-3 py-1 rounded mt-1">reply</button>
       </div>
     `;
 
@@ -220,6 +295,15 @@ function renderPosts() {
 }
 
 // =============================================================
-// BOOT
+// STATUS MENU BOOT
 // =============================================================
-document.addEventListener("DOMContentLoaded", renderPosts);
+document.addEventListener("DOMContentLoaded", () => {
+  const saved = localStorage.getItem("milkkit_status") || "online";
+  applyStatus(saved);
+
+  document.querySelectorAll("#statusMenu button[data-status]").forEach(btn => {
+    btn.addEventListener("click", () => applyStatus(btn.dataset.status));
+  });
+
+  renderPosts();
+});
