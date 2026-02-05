@@ -51,16 +51,16 @@
     .password-wrap {
       position: relative;
       width: 100%;
-      display: inline-block; /* prevent weird centering */
+      display: inline-block;
     }
     .password-wrap input {
       width: 100%;
       display: block;
-      padding-right: 2.8rem; /* give more space for icon */
+      padding-right: 2.8rem;
     }
     .eye {
       position: absolute;
-      right: 0.65rem; /* hard-anchor to right edge */
+      right: 0.65rem;
       top: 50%;
       transform: translateY(-50%);
       background: none;
@@ -71,7 +71,6 @@
       padding: 0;
       height: 1.2rem;
       width: 1.2rem;
-      line-height: 1.2rem;
       text-align: center;
     }
     button {
@@ -118,6 +117,10 @@
       const accounts = JSON.parse(localStorage.getItem("accounts") || "{}");
 
       if (accounts[user] === pass) {
+
+        // ✅ REQUIRED LINE ADDED
+        localStorage.setItem("milkkit_user", user);
+
         window.location.href = "home.html";
       } else {
         alert("invalid login");
