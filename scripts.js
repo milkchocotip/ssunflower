@@ -213,10 +213,52 @@ function renderPosts() {
           </div>` : ``}
         </div>
         <div class="prose prose-invert my-3 whitespace-pre-wrap">${post.content}</div>
-        <div class="flex justify-around text-gray-400">
-          <button onclick="toggleLike(${i})">${icons.like} ${post.likes.length}</button>
-          <button onclick="toggleBookmark(${i})">${icons.bookmark}</button>
-          <button onclick="navigator.clipboard.writeText(location.href)">${icons.share}</button>
+        <div class="flex items-center justify-between text-gray-400 pt-2">
+          <button
+            onclick="document.getElementById('comment-box-${i}')?.classList.toggle('hidden')"
+            class="flex items-center gap-1 text-gray-400 hover:text-white transition"
+            aria-label="comment" 
+          >
+            ${icons.comment}
+            <span class="text-sm">${post.comments.length}</span>
+          </button>
+
+          <button
+            onclick="toggleLike(${i})"
+            class="flex items-center gap-1 ${post.likes.includes(currentUser) ? 'text-white' : 'text-gray-400 hover:text-white'} transition"
+            aria-label="like"
+          >
+            ${icons.like}
+            <span class="text-sm">${post.likes.length}</span>
+          </button>
+
+          <button
+            onclick="toggleBookmark(${i})"
+            class="flex items-center ${post.bookmarks.includes(currentUser) ? 'text-white' : 'text-gray-400 hover:text-white'} transition"
+            aria-label="bookmark"
+          >
+            ${icons.bookmark}
+          </button>
+
+          <button
+            onclick="navigator.clipboard.writeText(location.href)"
+            class="flex items-center text-gray-400 hover:text-white transition"
+            aria-label="share"
+          >
+            ${icons.share}
+          </button>
+        </div>
+
+        <div id="comment-box-${i}" class="hidden mt-3">
+          <input
+            id="comment-${i}"
+            class="w-full p-2 bg-gray-800 border border-gray-700 rounded text-white"
+            placeholder="add a comment…"
+          />
+          <button
+            onclick="submitComment(${i})"
+            class="mt-2 bg-white text-black px-3 py-1 rounded"
+          >reply</button>
         </div>`;
 
     feed.appendChild(card);
