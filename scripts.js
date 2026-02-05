@@ -1,18 +1,18 @@
 // =============================================================
-// MILKKIT FULL ENGINE — with users, ownership, logout
+// MILKKIT FULL ENGINE — INLINE POST VERSION
 // =============================================================
 
 // -------------------------------------------------------------
-// AUTH — FIXED (works with file://, live server, and hosting)
+// AUTH — protects private pages
 // -------------------------------------------------------------
 const currentUser = localStorage.getItem("milkkit_user");
 
-// get the actual page name reliably
+// get page name
 const page = location.pathname.split("/").pop();
 
 // pages allowed without login
 const isPublicPage =
-  page === "" ||           // root
+  page === "" ||
   page === "index" ||
   page === "index.html" ||
   page === "create.html";
@@ -40,7 +40,7 @@ function logout() {
 }
 
 // -------------------------------------------------------------
-// SUBMIT POST (new or edit)
+// SUBMIT POST (legacy submit.html support — still works)
 // -------------------------------------------------------------
 function submitPost() {
   const titleEl = document.getElementById("posttitle");
@@ -78,7 +78,53 @@ function submitPost() {
 }
 
 // -------------------------------------------------------------
-// EDIT MODE
+// INLINE POST SUBMISSION (Twitter-style composer)
+// -------------------------------------------------------------
+function submitInlinePost() {
+  const title = document.getElementById("inlineTitle")?.value.trim();
+  const content = document.getElementById("inlineContent")?.value.trim();
+
+  if (!title || !content) return alert("fill everything out");
+
+  const rendered = marked.parse(content);
+
+  posts.unshift({
+    title,
+    raw: content,
+    content: rendered,
+    author: currentUser,
+    comments: [],
+    hidden: false,
+    time: Date.now()
+  });
+
+  savePosts();
+  renderPosts();
+
+  // clear composer fields
+  document.getElementById("inlineTitle").value = "";
+  document.getElementById("inlineContent").value = "";
+}
+
+// -------------------------------------------------------------
+// INLINE FORMAT BUTTONS
+// -------------------------------------------------------------
+function applyInlineFormat(type) {
+  const box = document.getElementById("inlineContent");
+  if (!box) return;
+
+  let text = box.value;
+
+  if (type === "bold") text += " **bold**";
+  if (type === "italic") text += " *italic*";
+  if (type === "h1") text += "\n# heading";
+  if (type === "bullet") text += "\n- item";
+
+  box.value = text;
+}
+
+// -------------------------------------------------------------
+// EDIT MODE (submit.html support)
 // -------------------------------------------------------------
 function checkEditMode() {
   const params = new URLSearchParams(window.location.search);
@@ -149,7 +195,7 @@ function renderPosts() {
 }
 
 // -------------------------------------------------------------
-// MENU
+// MENU HANDLING
 // -------------------------------------------------------------
 function toggleMenu(i) {
   document.querySelectorAll("[id^='menu-']").forEach(m => m.classList.add("hidden"));
@@ -158,7 +204,7 @@ function toggleMenu(i) {
 }
 
 // -------------------------------------------------------------
-// POST ACTIONS (OWNER ONLY)
+// POST ACTIONS
 // -------------------------------------------------------------
 function startEdit(i) {
   if (posts[i].author !== currentUser) return;
@@ -271,28 +317,27 @@ function renderReplies(i, ci) {
 }
 
 // -------------------------------------------------------------
-// FORMAT BUTTONS
-// -------------------------------------------------------------
-function applyFormat(type) {
-  const box = document.getElementById("postcontent");
-  if (!box) return;
-
-  let text = box.value;
-  if (type === "bold") text += " **bold**";
-  if (type === "italic") text += " *italic*";
-  if (type === "h1") text += "\n# heading";
-  if (type === "bullet") text += "\n- item";
-  box.value = text;
-}
-// -------------------------------------------------------------
-// STATUS DROPDOWN (for profile icon)
+// STATUS DROPDOWN (ring + dot update)
 // -------------------------------------------------------------
 document.addEventListener("DOMContentLoaded", () => {
   const statusButton = document.getElementById("statusButton");
   const statusMenu = document.getElementById("statusMenu");
   const statusDot = document.getElementById("statusDot");
 
-  // open / close menu on click
+  const ringColors = {
+    online: "ring-green-500",
+    away: "ring-yellow-400",
+    dnd: "ring-red-600",
+    offline: "ring-gray-500"
+  };
+
+  const dotColors = {
+    online: "bg-green-500",
+    away: "bg-yellow-400",
+    dnd: "bg-red-600",
+    offline: "bg-gray-500"
+  };
+
   if (statusButton) {
     statusButton.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -300,45 +345,35 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // update status when clicked in menu
   document.querySelectorAll("#statusMenu button[data-status]").forEach(btn => {
     btn.addEventListener("click", () => {
       const status = btn.dataset.status;
 
-      // save status
       localStorage.setItem("milkkit_status", status);
-
-      // update color
-      const colors = {
-        online: "bg-green-500",
-        away: "bg-yellow-400",
-        dnd: "bg-red-600",
-        offline: "bg-gray-500"
-      };
 
       statusDot.className =
         "absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-gray-900 " +
-        colors[status];
+        dotColors[status];
+
+      statusButton.className =
+        "relative w-8 h-8 rounded-full bg-gray-700 cursor-pointer ring-2 " +
+        ringColors[status];
 
       statusMenu.classList.add("hidden");
     });
   });
 
-  // restore saved status
   const savedStatus = localStorage.getItem("milkkit_status");
-  if (savedStatus && statusDot) {
-    const colors = {
-      online: "bg-green-500",
-      away: "bg-yellow-400",
-      dnd: "bg-red-600",
-      offline: "bg-gray-500"
-    };
+  if (savedStatus && statusDot && statusButton) {
     statusDot.className =
       "absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-gray-900 " +
-      colors[savedStatus];
+      dotColors[savedStatus];
+
+    statusButton.className =
+      "relative w-8 h-8 rounded-full bg-gray-700 cursor-pointer ring-2 " +
+      ringColors[savedStatus];
   }
 
-  // close dropdown when clicking outside
   document.addEventListener("click", () => {
     statusMenu?.classList.add("hidden");
   });
