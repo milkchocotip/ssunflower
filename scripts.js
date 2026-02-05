@@ -29,8 +29,13 @@ function savePosts() {
 // =============================================================
 const icons = {
   comment: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h6m-2 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>`,
+
   like: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" /></svg>`,
+
   bookmark: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z" /></svg>`,
+
+  bookmarkFilled: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M6 2a2 2 0 00-2 2v18l8-5 8 5V4a2 2 0 00-2-2H6z"/></svg>`,
+
   share: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 8l4-4m0 0l-4-4m4 4H9" /></svg>`
 };
 
@@ -236,57 +241,67 @@ function renderPosts() {
     const card = document.createElement("div");
     card.className = "bg-gray-900 p-4 rounded-xl border border-gray-800";
 
-    card.innerHTML = post._editing ? `
-      <input id="edit-title-${i}" class="w-full p-2 mb-2 bg-gray-800 rounded" value="${post.title}">
-      <textarea id="edit-content-${i}" class="w-full p-2 bg-gray-800 rounded">${post.raw}</textarea>
-      <div class="flex gap-2 mt-2">
-        <button onclick="saveEditPost(${i})" class="bg-white text-black px-3 py-1 rounded">save</button>
-        <button onclick="cancelEditPost(${i})" class="bg-gray-700 px-3 py-1 rounded">cancel</button>
-      </div>
-    ` : `
+    card.innerHTML = `
       <div class="flex justify-between">
         <div>
           <a href="post.html?id=${post.id}" class="text-xl font-bold hover:underline">${post.title}</a>
           <p class="text-xs text-gray-400">m/${post.author} • ${formatTime(post.time)}</p>
         </div>
-        ${post.author === currentUser ? `
-        <div class="relative">
-          <button onclick="togglePostMenu(${i})">⋯</button>
-          <div id="post-menu-${i}" class="hidden absolute right-0 bg-gray-800 border border-gray-700 rounded">
-            <button onclick="startEditPost(${i})" class="block px-3 py-2">edit</button>
-            <button onclick="deletePost(${i})" class="block px-3 py-2 text-red-400">delete</button>
-          </div>
-        </div>` : ``}
       </div>
 
       <div class="prose prose-invert my-3 whitespace-pre-wrap">${post.content}</div>
 
-      <div class="flex justify-between text-gray-400">
-        <button onclick="toggleCommentBox(${i})">${icons.comment} ${post.comments.length}</button>
-        <button onclick="toggleLike(${i})">${icons.like} ${post.likes.length}</button>
-        <button onclick="toggleBookmark(${i})">${icons.bookmark}</button>
-        <button onclick="navigator.clipboard.writeText(location.href)">${icons.share}</button>
+      <div class="flex justify-between pt-2">
+        <button onclick="toggleCommentBox(${i})"
+          class="flex items-center gap-1 ${
+            openCommentIndex === i ? "text-white" : "text-gray-400 hover:text-white"
+          }">
+          ${icons.comment}<span class="text-sm">${post.comments.length}</span>
+        </button>
+
+        <button onclick="toggleLike(${i})"
+          class="flex items-center gap-1 ${
+            post.likes.includes(currentUser)
+              ? "text-white"
+              : "text-gray-400 hover:text-white"
+          }">
+          ${icons.like}<span class="text-sm">${post.likes.length}</span>
+        </button>
+
+        <button onclick="toggleBookmark(${i})"
+          class="${
+            post.bookmarks.includes(currentUser)
+              ? "text-white"
+              : "text-gray-400 hover:text-white"
+          }">
+          ${
+            post.bookmarks.includes(currentUser)
+              ? icons.bookmarkFilled
+              : icons.bookmark
+          }
+        </button>
+
+        <button onclick="navigator.clipboard.writeText(location.href)"
+          class="text-gray-400 hover:text-white">
+          ${icons.share}
+        </button>
       </div>
 
-      <div id="comment-box-${i}" class="${openCommentIndex === i ? '' : 'hidden'} mt-3">
+      <div id="comment-box-${i}" class="${openCommentIndex === i ? "" : "hidden"} mt-3">
         ${post.comments.map((c, ci) => `
           <div class="border border-gray-800 rounded p-2 mb-2">
             <div class="text-xs text-gray-400 flex justify-between">
               <span>m/${c.author} • ${formatTime(c.time)}</span>
-              ${c.author === currentUser ? `
-                <span>
-                  <button onclick="startEditComment(${i},${ci})">edit</button>
-                  <button onclick="deleteComment(${i},${ci})" class="text-red-400">delete</button>
-                </span>` : ``}
             </div>
-            ${c._editing ? `
-              <textarea id="edit-comment-${i}-${ci}" class="w-full p-2 bg-gray-800 rounded">${c.raw}</textarea>
-              <button onclick="saveEditComment(${i},${ci})" class="bg-white text-black px-2 py-1 rounded mt-1">save</button>
-            ` : `<div class="prose prose-invert mt-2">${c.content}</div>`}
+            <div class="prose prose-invert mt-2">${c.content}</div>
           </div>
         `).join("")}
+
         <input id="comment-${i}" class="w-full p-2 bg-gray-800 rounded" placeholder="add a comment…">
-        <button onclick="submitComment(${i})" class="bg-white text-black px-3 py-1 rounded mt-1">reply</button>
+        <button onclick="submitComment(${i})"
+          class="bg-white text-black px-3 py-1 rounded mt-1">
+          reply
+        </button>
       </div>
     `;
 
