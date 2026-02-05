@@ -192,5 +192,27 @@
     });
   </script>
 
+  <!-- DELETE CONFIRM MODAL -->
+  <div
+    id="deleteConfirm"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+  >
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 w-full max-w-sm">
+      <h3 class="text-lg font-semibold mb-2">delete post?</h3>
+      <p class="text-sm text-gray-400 mb-4">this can’t be undone.</p>
+
+      <div class="flex justify-end gap-2">
+        <button
+          onclick="confirmDelete(false)"
+          class="px-4 py-2 bg-gray-800 rounded hover:bg-gray-700"
+        >no</button>
+        <button
+          onclick="confirmDelete(true)"
+          class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-500"
+        >yes, delete</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
