@@ -24,9 +24,46 @@ function savePosts() {
 }
 
 // =============================================================
+// STATUS SYSTEM (LOCAL + ONLINE-PREP)
+// =============================================================
+function getUserStatus(username) {
+  return localStorage.getItem(`milkkit_status_${username}`) || "offline";
+}
+
+function setUserStatus(username, status) {
+  localStorage.setItem(`milkkit_status_${username}`, status);
+}
+
+function applyStatus(status) {
+  const statusButton = document.getElementById("statusButton");
+  const statusDot = document.getElementById("statusDot");
+  const sidebarStatus = document.getElementById("sidebarStatus");
+
+  if (!statusButton || !statusDot) return;
+
+  const colors = {
+    online:  { ring: "ring-green-500", dot: "bg-green-500" },
+    away:    { ring: "ring-yellow-400", dot: "bg-yellow-400" },
+    dnd:     { ring: "ring-red-600", dot: "bg-red-600" },
+    offline: { ring: "ring-gray-500", dot: "bg-gray-500" }
+  };
+
+  statusButton.className =
+    "relative w-8 h-8 rounded-full bg-gray-700 cursor-pointer ring-2";
+  statusDot.className =
+    "absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-gray-900";
+
+  statusButton.classList.add(colors[status].ring);
+  statusDot.classList.add(colors[status].dot);
+
+  if (sidebarStatus) sidebarStatus.textContent = status;
+}
+
+// =============================================================
 // LOGOUT
 // =============================================================
 function logout() {
+  setUserStatus(currentUser, "offline");
   localStorage.removeItem("milkkit_user");
   window.location.href = "index.html";
 }
@@ -36,13 +73,9 @@ function logout() {
 // =============================================================
 const icons = {
   comment: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h6m-2 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>`,
-
   like: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>`,
-
   bookmark: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/></svg>`,
-
   bookmarkFilled: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M6 2a2 2 0 00-2 2v18l8-5 8 5V4a2 2 0 00-2-2H6z"/></svg>`,
-
   share: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 8l4-4m0 0l-4-4m4 4H9"/></svg>`
 };
 
@@ -78,7 +111,6 @@ function closeComposer() {
 function submitInlinePost() {
   const titleEl = document.getElementById("inlineTitle");
   const contentEl = document.getElementById("inlineContent");
-
   if (!titleEl || !contentEl) return;
 
   const title = titleEl.value.trim();
@@ -177,8 +209,7 @@ function deleteComment(p, c) {
 // POST MENU
 // =============================================================
 function togglePostMenu(i) {
-  document
-    .querySelectorAll("[id^='post-menu-']")
+  document.querySelectorAll("[id^='post-menu-']")
     .forEach(m => m.classList.add("hidden"));
   document.getElementById(`post-menu-${i}`)?.classList.toggle("hidden");
 }
@@ -217,6 +248,14 @@ function renderPosts() {
   feed.innerHTML = "";
 
   posts.forEach((post, i) => {
+    const status = getUserStatus(post.author);
+    const dotColor = {
+      online: "bg-green-500",
+      away: "bg-yellow-400",
+      dnd: "bg-red-600",
+      offline: "bg-gray-500"
+    }[status];
+
     const card = document.createElement("div");
     card.className = "bg-gray-900 p-4 rounded-xl border border-gray-800";
 
@@ -224,17 +263,12 @@ function renderPosts() {
       <div class="flex justify-between">
         <div>
           <a href="post.html?id=${post.id}" class="text-xl font-bold hover:underline">${post.title}</a>
-          <p class="text-xs text-gray-400">m/${post.author} • ${formatTime(post.time)}</p>
+          <p class="text-xs text-gray-400 flex items-center gap-1">
+            m/${post.author}
+            <span class="w-2 h-2 rounded-full ${dotColor}"></span>
+            • ${formatTime(post.time)}
+          </p>
         </div>
-
-        ${post.author === currentUser ? `
-        <div class="relative">
-          <button onclick="event.stopPropagation(); togglePostMenu(${i})">⋯</button>
-          <div id="post-menu-${i}" class="hidden absolute right-0 bg-gray-800 border border-gray-700 rounded z-10">
-            <button onclick="startEditPost(${i})" class="block px-3 py-2">edit</button>
-            <button onclick="deletePost(${i})" class="block px-3 py-2 text-red-400">delete</button>
-          </div>
-        </div>` : ``}
       </div>
 
       <div class="prose prose-invert my-3">${post.content}</div>
@@ -268,11 +302,11 @@ function renderPosts() {
                   <button onclick="deleteComment(${i},${ci})" class="text-red-400">delete</button>
                 </span>`:''}
             </div>
-
-            ${c._editing?`
-              <textarea id="edit-comment-${i}-${ci}" class="w-full bg-gray-800 p-2 rounded">${c.raw}</textarea>
-              <button onclick="saveEditComment(${i},${ci})" class="bg-white text-black px-2 py-1 rounded mt-1">save</button>
-            `:`<div class="prose prose-invert mt-2">${c.content}</div>`}
+            ${c._editing
+              ? `<textarea id="edit-comment-${i}-${ci}" class="w-full bg-gray-800 p-2 rounded">${c.raw}</textarea>
+                 <button onclick="saveEditComment(${i},${ci})" class="bg-white text-black px-2 py-1 rounded mt-1">save</button>`
+              : `<div class="prose prose-invert mt-2">${c.content}</div>`
+            }
           </div>
         `).join("")}
 
@@ -284,6 +318,36 @@ function renderPosts() {
     feed.appendChild(card);
   });
 }
+
+// =============================================================
+// STATUS MENU INIT
+// =============================================================
+document.addEventListener("DOMContentLoaded", () => {
+  const statusButton = document.getElementById("statusButton");
+  const statusMenu = document.getElementById("statusMenu");
+
+  if (!statusButton || !statusMenu) return;
+
+  statusButton.addEventListener("click", e => {
+    e.stopPropagation();
+    statusMenu.classList.toggle("hidden");
+  });
+
+  statusMenu.querySelectorAll("button[data-status]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const s = btn.dataset.status;
+      setUserStatus(currentUser, s);
+      applyStatus(s);
+      statusMenu.classList.add("hidden");
+    });
+  });
+
+  applyStatus(getUserStatus(currentUser));
+
+  document.addEventListener("click", () => {
+    statusMenu.classList.add("hidden");
+  });
+});
 
 // =============================================================
 // BOOT
