@@ -14,10 +14,14 @@
   <!-- NAVBAR -->
   <nav class="w-full flex flex-wrap items-center justify-between gap-4 p-4 bg-gray-900 shadow-lg">
 
-    <!-- LOGO -->
-    <div class="flex-shrink-0">
-      <img src="logo.png" class="h-8 object-contain" />
-    </div>
+<!-- LOGO -->
+<div class="flex-shrink-0">
+  <a href="home.html">
+    <img src="logo.png" class="h-8 object-contain cursor-pointer" />
+  </a>
+</div>
+
+
 
     <!-- SEARCH -->
     <input
@@ -30,8 +34,13 @@
     <!-- RIGHT SIDE -->
     <div class="flex items-center gap-4 flex-wrap">
 
-      <!-- (optional) REMOVE create post link since inline exists -->
-      <!-- <a href="submit.html" class="text-base text-white hover:text-gray-300">+ create post</a> -->
+      <!-- OPEN COMPOSER (Twitter-style) -->
+      <button
+        onclick="openComposer()"
+        class="text-base text-white hover:text-gray-300"
+      >
+        + create post
+      </button>
 
       <!-- STATUS BUTTON -->
       <div
@@ -68,54 +77,17 @@
             <span class="w-2 h-2 rounded-full bg-gray-500"></span> offline
           </button>
 
-          <!-- LOGOUT -->
+          <!-- CLEAN LOGOUT BUTTON (no dot, no indicator) -->
           <button
             onclick="logout()"
-            class="flex items-center gap-2 text-left text-red-400 hover:text-red-300 pt-2 border-t border-gray-700 mt-1"
+            class="text-left text-red-400 hover:text-red-300 pt-2 border-t border-gray-700 mt-1"
           >
-            <span class="w-2 h-2 rounded-full bg-red-500"></span> logout
+            logout
           </button>
         </div>
       </div>
     </div>
   </nav>
-
-  <!-- INLINE POST COMPOSER -->
-  <div class="w-full p-4 sm:p-6 border-b border-gray-800 bg-gray-900">
-    
-    <h2 class="text-lg font-semibold mb-3">✦ create a post ✦</h2>
-
-    <!-- TITLE -->
-    <input
-      id="inlineTitle"
-      type="text"
-      placeholder="title"
-      class="w-full p-3 mb-3 bg-gray-800 border border-gray-700 rounded-lg text-white"
-    />
-
-    <!-- BODY -->
-    <textarea
-      id="inlineContent"
-      placeholder="write your post..."
-      class="w-full min-h-[120px] p-3 bg-gray-800 border border-gray-700 rounded-lg text-white resize-none mb-3"
-    ></textarea>
-
-    <!-- FORMAT BUTTONS -->
-    <div class="flex gap-2 mb-3">
-      <button onclick="applyInlineFormat('bold')" class="px-3 py-1 bg-gray-700 rounded">b</button>
-      <button onclick="applyInlineFormat('italic')" class="px-3 py-1 bg-gray-700 rounded">i</button>
-      <button onclick="applyInlineFormat('h1')" class="px-3 py-1 bg-gray-700 rounded">h1</button>
-      <button onclick="applyInlineFormat('bullet')" class="px-3 py-1 bg-gray-700 rounded">•</button>
-    </div>
-
-    <!-- POST BUTTON -->
-    <button
-      onclick="submitInlinePost()"
-      class="w-full py-3 bg-white text-black rounded-lg font-semibold text-lg hover:bg-gray-200"
-    >
-      post
-    </button>
-  </div>
 
   <!-- FEED -->
   <div
@@ -126,7 +98,7 @@
   <!-- DELETE MODAL -->
   <div
     id="deleteModal"
-    class="hidden fixed inset-0 bg-black/60 backdrop-blur flex items-center justify-center p-4"
+    class="hidden fixed inset-0 bg-black/60 backdrop-blur flex items-center justify-center p-4 z-40"
   >
     <div class="bg-gray-900 p-6 rounded-xl w-full max-w-xs text-center space-y-4">
       <p class="text-lg">Delete this post?</p>
@@ -144,6 +116,51 @@
           cancel
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- TWITTER-STYLE COMPOSER MODAL -->
+  <div
+    id="composerOverlay"
+    class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50"
+  >
+    <div class="bg-gray-900 w-full max-w-lg p-6 rounded-2xl border border-gray-700 shadow-xl">
+
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold">✦ create a post ✦</h2>
+        <button onclick="closeComposer()" class="text-gray-400 hover:text-white text-lg">✕</button>
+      </div>
+
+      <!-- TITLE -->
+      <input
+        id="inlineTitle"
+        type="text"
+        placeholder="title"
+        class="w-full p-3 mb-3 bg-gray-800 border border-gray-700 rounded-lg text-white"
+      />
+
+      <!-- BODY -->
+      <textarea
+        id="inlineContent"
+        placeholder="write your post..."
+        class="w-full min-h-[140px] p-3 bg-gray-800 border border-gray-700 rounded-lg text-white resize-none mb-3"
+      ></textarea>
+
+      <!-- FORMAT BUTTONS -->
+      <div class="flex gap-2 mb-4">
+        <button onclick="applyInlineFormat('bold')" class="px-3 py-1 bg-gray-700 rounded">b</button>
+        <button onclick="applyInlineFormat('italic')" class="px-3 py-1 bg-gray-700 rounded">i</button>
+        <button onclick="applyInlineFormat('h1')" class="px-3 py-1 bg-gray-700 rounded">h1</button>
+        <button onclick="applyInlineFormat('bullet')" class="px-3 py-1 bg-gray-700 rounded">•</button>
+      </div>
+
+      <!-- POST BUTTON -->
+      <button
+        onclick="submitInlinePost()"
+        class="w-full py-3 bg-white text-black rounded-lg font-semibold text-lg hover:bg-gray-200"
+      >
+        post
+      </button>
     </div>
   </div>
 
