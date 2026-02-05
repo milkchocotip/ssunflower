@@ -268,6 +268,34 @@ function renderPosts() {
 }
 
 // =============================================================
+// STATUS MENU
+// =============================================================
+document.addEventListener("DOMContentLoaded", () => {
+  const statusButton = document.getElementById("statusButton");
+  const statusMenu = document.getElementById("statusMenu");
+  const statusDot = document.getElementById("statusDot");
+
+  if (!statusButton || !statusMenu) return;
+
+  statusButton.addEventListener("click", e => {
+    e.stopPropagation();
+    statusMenu.classList.toggle("hidden");
+  });
+
+  statusMenu.querySelectorAll("button[data-status]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const s = btn.dataset.status;
+      localStorage.setItem("milkkit_status", s);
+      if (statusDot) statusDot.className = `w-3 h-3 rounded-full`;
+      statusMenu.classList.add("hidden");
+    });
+  });
+
+  document.addEventListener("click", () => statusMenu.classList.add("hidden"));
+});
+
+
+// =============================================================
 // BOOT
 // =============================================================
 document.addEventListener("DOMContentLoaded", renderPosts);
