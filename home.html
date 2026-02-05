@@ -11,159 +11,161 @@
 
 <body class="bg-black text-white min-h-screen flex flex-col">
 
-<!-- ================= NAVBAR ================= -->
-<nav class="w-full flex items-center justify-between gap-2 p-3 sm:p-4 bg-gray-900/90 backdrop-blur shadow-lg sticky top-0 z-50">
+  <!-- NAVBAR -->
+  <nav class="w-full flex items-center justify-between gap-2 p-4 bg-gray-900 sticky top-0 z-50">
 
-  <!-- LEFT -->
-  <div class="flex items-center gap-3">
-    <button
-      id="sidebarToggle"
-      onclick="toggleSidebar()"
-      class="md:hidden text-gray-300 hover:text-white text-2xl"
-    >☰</button>
+    <!-- LEFT -->
+    <div class="flex items-center gap-3">
+      <button
+        id="sidebarToggle"
+        onclick="toggleSidebar()"
+        class="md:hidden text-2xl"
+      >☰</button>
 
-    <a href="home.html">
-      <img src="logo.png" class="h-16 object-contain" />
-    </a>
-  </div>
+      <a href="home.html">
+        <img src="logo.png" class="h-10 object-contain" />
+      </a>
+    </div>
 
-  <!-- SEARCH -->
-  <input
-    type="text"
-    placeholder="search"
-    class="hidden sm:block p-2 rounded-lg bg-gray-800 text-white w-1/2"
-  />
+    <!-- SEARCH -->
+    <input
+      type="text"
+      placeholder="search"
+      class="hidden sm:block p-2 rounded bg-gray-800 w-1/2"
+    />
 
-  <!-- RIGHT -->
-  <div class="flex items-center gap-4">
+    <!-- RIGHT -->
+    <div class="flex items-center gap-4">
 
-    <button
-      onclick="openComposer()"
-      class="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg"
-    >
-      + create post
-    </button>
+      <button
+        onclick="openComposer()"
+        class="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded"
+      >
+        + create post
+      </button>
 
-    <!-- STATUS -->
-    <div id="statusButton" class="relative w-8 h-8 rounded-full bg-gray-700 cursor-pointer ring-2 ring-green-500">
-      <div class="flex items-center justify-center w-full h-full text-xs">👤</div>
+      <!-- STATUS -->
+      <div id="statusButton" class="relative w-8 h-8 bg-gray-700 rounded-full cursor-pointer">
+        <div class="flex items-center justify-center w-full h-full">👤</div>
 
-      <div id="statusDot"
-        class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-gray-900 bg-green-500">
+        <div
+          id="statusDot"
+          class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-black bg-green-500"
+        ></div>
+
+        <div
+          id="statusMenu"
+          class="hidden absolute top-10 right-0 bg-gray-800 border border-gray-700 rounded p-2 space-y-1 z-50 min-w-[150px]"
+        >
+          <button data-status="online" class="block w-full text-left">online</button>
+          <button data-status="away" class="block w-full text-left">away</button>
+          <button data-status="dnd" class="block w-full text-left">do not disturb</button>
+          <button data-status="offline" class="block w-full text-left">offline</button>
+
+          <button
+            onclick="logout()"
+            class="block w-full text-left text-red-400 border-t border-gray-700 mt-2 pt-2"
+          >
+            logout
+          </button>
+        </div>
       </div>
 
-      <div
-        id="statusMenu"
-        class="hidden absolute top-10 right-0 bg-gray-800 border border-gray-700 rounded-lg p-3 flex flex-col gap-2 text-sm z-50"
-      >
-        <button data-status="online">online</button>
-        <button data-status="away">away</button>
-        <button data-status="dnd">do not disturb</button>
-        <button data-status="offline">offline</button>
+    </div>
+  </nav>
 
-        <button onclick="logout()"
-          class="pt-2 mt-1 border-t border-gray-700 text-red-400 hover:text-red-300 text-left">
-          logout
+  <!-- BODY -->
+  <div class="flex flex-1">
+
+    <!-- SIDEBAR -->
+    <aside
+      id="sidebar"
+      class="fixed md:static top-0 left-0 h-full w-64 bg-black border-r border-gray-800 p-4 transform -translate-x-full md:translate-x-0 transition"
+    >
+      <div class="mb-4">
+        <p id="sidebarUser" class="font-semibold"></p>
+        <p id="sidebarStatus" class="text-xs text-gray-400">online</p>
+      </div>
+
+      <nav class="flex flex-col gap-3">
+        <button onclick="goHome()">home</button>
+        <button onclick="goMyPosts()">my posts</button>
+        <button onclick="goSaved()">saved</button>
+      </nav>
+    </aside>
+
+    <!-- FEED -->
+    <main id="feed" class="flex-1 p-4 space-y-4"></main>
+  </div>
+
+  <!-- COMPOSER -->
+  <div
+    id="composerOverlay"
+    class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center"
+    onclick="if(event.target.id==='composerOverlay') closeComposer()"
+  >
+    <div class="bg-gray-900 border border-gray-800 rounded p-6 w-full max-w-2xl space-y-4">
+      <div class="flex justify-between items-center">
+        <h2 class="text-lg font-semibold">create post</h2>
+        <button onclick="closeComposer()">✕</button>
+      </div>
+
+      <input
+        id="inlineTitle"
+        placeholder="title"
+        class="w-full p-2 bg-gray-800 rounded"
+      />
+
+      <textarea
+        id="inlineContent"
+        rows="8"
+        placeholder="write in markdown…"
+        class="w-full p-2 bg-gray-800 rounded"
+      ></textarea>
+
+      <div class="flex justify-end gap-2">
+        <button onclick="closeComposer()" class="px-4 py-2 bg-gray-700 rounded">
+          cancel
+        </button>
+        <button onclick="submitInlinePost()" class="px-4 py-2 bg-white text-black rounded">
+          post
         </button>
       </div>
     </div>
-
-  </div>
-</nav>
-
-<!-- ================= LAYOUT ================= -->
-<div class="flex w-full relative">
-
-<!-- SIDEBAR -->
-<aside
-  id="sidebar"
-  class="fixed md:sticky top-0 md:top-24 left-0 z-40 h-full md:h-[calc(100vh-96px)]
-         w-64 p-6 border-r border-gray-800 bg-black/90 md:bg-black/30
-         transform -translate-x-full md:translate-x-0 transition"
->
-
-  <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 mb-6">
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center">👤</div>
-      <div>
-        <p id="sidebarUser" class="text-sm font-semibold"></p>
-        <p id="sidebarStatus" class="text-xs">online</p>
-      </div>
-    </div>
   </div>
 
-  <nav class="flex flex-col gap-4 text-sm">
-    <button onclick="goHome()">home</button>
-    <button onclick="goMyPosts()">my posts</button>
-    <button onclick="goSaved()">saved</button>
-  </nav>
+  <!-- SCRIPT -->
+  <script src="scripts.js"></script>
 
-</aside>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const u = localStorage.getItem("milkkit_user");
+      if (u) document.getElementById("sidebarUser").innerText = `m/${u}`;
+    });
 
-<!-- FEED -->
-<main id="feed" class="flex-1 p-3 sm:p-6 space-y-6 overflow-auto"></main>
+    function goHome() { location.href = "home.html"; }
+    function goMyPosts() { location.href = "home.html?filter=myposts"; }
+    function goSaved() { location.href = "home.html?filter=saved"; }
 
-</div>
-
-<!-- ================= COMPOSER ================= -->
-<div
-  id="composerOverlay"
-  onclick="if(event.target.id==='composerOverlay') closeComposer()"
-  class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center"
->
-  <div class="bg-gray-900 border border-gray-800 rounded-xl w-full sm:max-w-2xl p-6 space-y-4">
-
-    <button onclick="closeComposer()"
-      class="absolute top-3 right-3 text-gray-400 hover:text-white text-xl">✕</button>
-
-    <h2 class="text-lg font-semibold">create post</h2>
-
-    <input
-      id="inlineTitle"
-      placeholder="title"
-      class="w-full p-2 bg-gray-800 border border-gray-700 rounded"
-    />
-
-    <textarea
-      id="inlineContent"
-      rows="8"
-      placeholder="write in markdown…"
-      class="w-full p-2 bg-gray-800 border border-gray-700 rounded resize-none"
-    ></textarea>
-
-    <div class="flex justify-end gap-2">
-      <button onclick="closeComposer()" class="px-4 py-2 bg-gray-800 rounded">cancel</button>
-      <button onclick="submitInlinePost()" class="px-4 py-2 bg-white text-black rounded">post</button>
-    </div>
-  </div>
-</div>
-
-<script src="scripts.js"></script>
-
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-    const u = localStorage.getItem("milkkit_user");
-    if (u) document.getElementById("sidebarUser").innerText = `m/${u}`;
-  });
-
-  function goHome(){ location.href="home.html"; }
-  function goMyPosts(){ location.href="home.html?filter=myposts"; }
-  function goSaved(){ location.href="home.html?filter=saved"; }
-
-  function toggleSidebar(){
-    document.getElementById("sidebar").classList.toggle("-translate-x-full");
-  }
-
-  // MOBILE CLOSE
-  document.addEventListener("click", e => {
-    const sb = document.getElementById("sidebar");
-    const btn = document.getElementById("sidebarToggle");
-    if (!sb || !btn || innerWidth >= 768) return;
-    if (!sb.contains(e.target) && !btn.contains(e.target)) {
-      sb.classList.add("-translate-x-full");
+    function toggleSidebar() {
+      document.getElementById("sidebar").classList.toggle("-translate-x-full");
     }
-  });
-</script>
+
+    // STATUS MENU FIX (critical)
+    document.addEventListener("DOMContentLoaded", () => {
+      const btn = document.getElementById("statusButton");
+      const menu = document.getElementById("statusMenu");
+
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        menu.classList.toggle("hidden");
+      });
+
+      menu.addEventListener("click", e => e.stopPropagation());
+
+      document.addEventListener("click", () => menu.classList.add("hidden"));
+    });
+  </script>
 
 </body>
 </html>
