@@ -1,5 +1,5 @@
 // =============================================================
-// MILKKIT FULL ENGINE — INLINE POST VERSION
+// MILKKIT FULL ENGINE — INLINE POST VERSION (UPDATED)
 // =============================================================
 
 // -------------------------------------------------------------
@@ -37,6 +37,17 @@ function savePosts() {
 function logout() {
   localStorage.removeItem("milkkit_user");
   window.location.href = "index.html";
+}
+
+// -------------------------------------------------------------
+// OPEN/CLOSE INLINE COMPOSER
+// -------------------------------------------------------------
+function openComposer() {
+  document.getElementById("composerOverlay").classList.remove("hidden");
+}
+
+function closeComposer() {
+  document.getElementById("composerOverlay").classList.add("hidden");
 }
 
 // -------------------------------------------------------------
@@ -101,9 +112,12 @@ function submitInlinePost() {
   savePosts();
   renderPosts();
 
-  // clear composer fields
+  // clear fields
   document.getElementById("inlineTitle").value = "";
   document.getElementById("inlineContent").value = "";
+
+  // IMPORTANT: close composer after posting
+  closeComposer();
 }
 
 // -------------------------------------------------------------
@@ -124,7 +138,7 @@ function applyInlineFormat(type) {
 }
 
 // -------------------------------------------------------------
-// EDIT MODE (submit.html support)
+// EDIT MODE (for submit.html)
 // -------------------------------------------------------------
 function checkEditMode() {
   const params = new URLSearchParams(window.location.search);
@@ -153,6 +167,14 @@ function renderPosts() {
   if (!feed) return;
 
   feed.innerHTML = "";
+
+  // Blank-state message
+  if (posts.length === 0) {
+    feed.innerHTML = `
+      <p class="text-gray-500 text-center mt-10">no posts yet — be the first ✦</p>
+    `;
+    return;
+  }
 
   posts.forEach((post, i) => {
     if (post.hidden) return;
@@ -317,7 +339,7 @@ function renderReplies(i, ci) {
 }
 
 // -------------------------------------------------------------
-// STATUS DROPDOWN (ring + dot update)
+// STATUS DROPDOWN
 // -------------------------------------------------------------
 document.addEventListener("DOMContentLoaded", () => {
   const statusButton = document.getElementById("statusButton");
