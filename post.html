@@ -24,38 +24,37 @@
   <script src="scripts.js"></script>
 
   <!-- POST PAGE BOOTSTRAP -->
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const params = new URLSearchParams(location.search);
-      const postId = params.get("id");
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const params = new URLSearchParams(location.search);
+    const postId = params.get("id");
 
-      if (!postId) {
-        document.getElementById("feed").innerHTML =
-          "<p class='text-gray-400'>post not found</p>";
-        return;
-      }
+    const feed = document.getElementById("feed");
 
-      // pull full list
-      const allPosts = JSON.parse(
-        localStorage.getItem("milkkit_posts") || "[]"
-      );
+    if (!postId) {
+      feed.innerHTML = "<p class='text-gray-400'>post not found</p>";
+      return;
+    }
 
-      const post = allPosts.find(p => p.id === postId);
+    const allPosts = JSON.parse(
+      localStorage.getItem("milkkit_posts") || "[]"
+    );
 
-      if (!post) {
-        document.getElementById("feed").innerHTML =
-          "<p class='text-gray-400'>post not found</p>";
-        return;
-      }
+    const post = allPosts.find(p => p.id === postId);
 
-      // IMPORTANT:
-      // override global posts with ONLY this post
-      window.posts = [post];
+    if (!post) {
+      feed.innerHTML = "<p class='text-gray-400'>post not found</p>";
+      return;
+    }
 
-      // render using normal renderer
-      renderPosts();
-    });
-  </script>
+    // ✅ isolate single post
+    window.posts = [post];
+
+    // ✅ now render once
+    renderPosts();
+  });
+</script>
+
 
 </body>
 </html>
