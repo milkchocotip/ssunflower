@@ -307,13 +307,9 @@ function submitComment(postIndex, parentId = null) {
 function renderCommentTree(comments, postIndex, depth = 0) {
   return comments.map(c => `
     <div class="mt-3 ml-${depth * 4} border-l border-gray-700 pl-3">
-      <div class="text-xs text-gray-400 flex items-center gap-1">
-  m/${c.author}
-  ${renderUserStatus(c.author)}
-  • ${formatTime(c.time)}
-</div>
-
-
+      <div class="text-xs text-gray-400">
+        m/${c.author} • ${formatTime(c.time)}
+      </div>
 
       <div class="text-sm prose prose-invert">
         ${c.content}
@@ -344,7 +340,6 @@ function renderCommentTree(comments, postIndex, depth = 0) {
     </div>
   `).join("");
 }
-
 // =============================================================
 // RENDER — HOME
 // =============================================================
