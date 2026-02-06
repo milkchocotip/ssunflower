@@ -32,7 +32,7 @@ function uid() {
 }
 
 // =============================================================
-// ICONS (SVG — RESTORED)
+// ICONS (SVG)
 // =============================================================
 const icons = {
   like: `
@@ -60,6 +60,13 @@ const icons = {
       fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
       <path stroke-linecap="round" stroke-linejoin="round"
         d="M15 8l4-4m0 0l-4-4m4 4H9"/>
+    </svg>`,
+
+  comment: `
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5"
+      fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+      <path stroke-linecap="round" stroke-linejoin="round"
+        d="M7 8h10M7 12h6m-2 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
     </svg>`
 };
 
@@ -99,6 +106,25 @@ function formatTime(time) {
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h ago`;
   return new Date(time).toLocaleDateString();
+}
+
+// =============================================================
+// COMMENT HELPERS (POSTS + REPLIES)
+// =============================================================
+function countComments(list = []) {
+  return list.reduce(
+    (n, c) => n + 1 + countComments(c.replies || []),
+    0
+  );
+}
+
+function findComment(list, id) {
+  for (const c of list) {
+    if (c.id === id) return c;
+    const found = findComment(c.replies || [], id);
+    if (found) return found;
+  }
+  return null;
 }
 
 // =============================================================
@@ -143,23 +169,6 @@ function submitInlinePost() {
 }
 
 // =============================================================
-// FILTERING (HOME ONLY)
-// =============================================================
-function getVisiblePosts() {
-  const filter = new URLSearchParams(location.search).get("filter");
-
-  if (filter === "myposts") {
-    return posts.filter(p => p.author === currentUser);
-  }
-
-  if (filter === "saved") {
-    return posts.filter(p => p.bookmarks.includes(currentUser));
-  }
-
-  return posts;
-}
-
-// =============================================================
 // NAV
 // =============================================================
 function clickPost(id) {
@@ -186,22 +195,72 @@ function toggleBookmark(index) {
 }
 
 // =============================================================
-// COMMENTS (POST PAGE ONLY)
+// COMMENTS + REPLIES
 // =============================================================
-function submitComment(postIndex) {
-  const field = document.getElementById("commentField");
-  if (!field.value.trim()) return;
+function submitComment(postIndex, parentId = null) {
+  const field = document.getElementById(
+    parentId ? `reply-${parentId}` : "commentField"
+  );
+  if (!field || !field.value.trim()) return;
 
-  posts[postIndex].comments.push({
+  const comment = {
     id: uid(),
     author: currentUser,
     content: marked.parse(field.value),
-    time: Date.now()
-  });
+    time: Date.now(),
+    replies: []
+  };
+
+  if (parentId) {
+    const parent = findComment(posts[postIndex].comments, parentId);
+    if (parent) parent.replies.push(comment);
+  } else {
+    posts[postIndex].comments.push(comment);
+  }
 
   field.value = "";
   savePosts();
   renderSinglePost();
+}
+
+// =============================================================
+// COMMENT TREE RENDER
+// =============================================================
+function renderCommentTree(comments, postIndex, depth = 0) {
+  return comments.map(c => `
+    <div class="mt-3 ml-${depth * 4} border-l border-gray-700 pl-3">
+      <div class="text-xs text-gray-400">
+        m/${c.author} • ${formatTime(c.time)}
+      </div>
+
+      <div class="text-sm prose prose-invert">
+        ${c.content}
+      </div>
+
+      <button
+        onclick="document.getElementById('reply-box-${c.id}').classList.toggle('hidden')"
+        class="text-xs text-gray-500 mt-1"
+      >
+        reply
+      </button>
+
+      <div id="reply-box-${c.id}" class="hidden mt-2">
+        <textarea
+          id="reply-${c.id}"
+          class="w-full bg-gray-800 p-2 rounded text-sm"
+          placeholder="write a reply…"
+        ></textarea>
+        <button
+          onclick="submitComment(${postIndex}, '${c.id}')"
+          class="bg-white text-black px-2 py-1 rounded mt-1 text-xs"
+        >
+          post
+        </button>
+      </div>
+
+      ${renderCommentTree(c.replies, postIndex, depth + 1)}
+    </div>
+  `).join("");
 }
 
 // =============================================================
@@ -215,11 +274,7 @@ function renderPosts() {
 
   feed.innerHTML = "";
 
-  const visiblePosts = getVisiblePosts();
-
-  visiblePosts.forEach(p => {
-    const i = posts.indexOf(p);
-
+  posts.forEach((p, i) => {
     feed.innerHTML += `
       <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
         <div onclick="clickPost('${p.id}')" class="cursor-pointer">
@@ -234,6 +289,10 @@ function renderPosts() {
         </div>
 
         <div class="flex justify-between text-gray-400 mt-3">
+          <div class="flex items-center gap-1">
+            ${icons.comment} ${countComments(p.comments)}
+          </div>
+
           <button onclick="toggleLike(${i})" class="flex items-center gap-1">
             ${icons.like} ${p.likes.length}
           </button>
@@ -262,11 +321,7 @@ function renderSinglePost() {
 
   const id = new URLSearchParams(location.search).get("id");
   const post = posts.find(p => p.id === id);
-
-  if (!post) {
-    feed.innerHTML = "<p class='text-gray-400'>post not found</p>";
-    return;
-  }
+  if (!post) return;
 
   const index = posts.indexOf(post);
 
@@ -282,16 +337,11 @@ function renderSinglePost() {
       </div>
 
       <div class="border-t border-gray-700 pt-4">
-        <div class="font-semibold mb-2">comments</div>
+        <div class="font-semibold mb-2">
+          comments (${countComments(post.comments)})
+        </div>
 
-        ${post.comments.map(c => `
-          <div class="mb-3">
-            <div class="text-xs text-gray-400">
-              m/${c.author} • ${formatTime(c.time)}
-            </div>
-            <div class="text-sm">${c.content}</div>
-          </div>
-        `).join("")}
+        ${renderCommentTree(post.comments, index)}
 
         <textarea
           id="commentField"
@@ -315,15 +365,5 @@ function renderSinglePost() {
 // =============================================================
 document.addEventListener("DOMContentLoaded", () => {
   applyStatus(localStorage.getItem("milkkit_status") || "online");
-
-  document
-    .querySelectorAll("#statusMenu button[data-status]")
-    .forEach(btn => {
-      btn.addEventListener("click", () => {
-        applyStatus(btn.dataset.status);
-        document.getElementById("statusMenu").classList.add("hidden");
-      });
-    });
-
   IS_SINGLE_POST ? renderSinglePost() : renderPosts();
 });
