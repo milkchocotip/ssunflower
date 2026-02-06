@@ -32,6 +32,21 @@ function uid() {
 }
 
 // =============================================================
+// USER STATUSES
+// =============================================================
+let userStatuses = JSON.parse(
+  localStorage.getItem("milkkit_user_statuses") || "{}"
+);
+
+function saveUserStatuses() {
+  localStorage.setItem(
+    "milkkit_user_statuses",
+    JSON.stringify(userStatuses)
+  );
+}
+
+
+// =============================================================
 // ICONS (SVG)
 // =============================================================
 const icons = {
@@ -76,6 +91,15 @@ const icons = {
 function applyStatus(status) {
   localStorage.setItem("milkkit_status", status);
 
+  // save current user's public status
+  if (currentUser) {
+    userStatuses[currentUser] = {
+      status,
+      lastSeen: Date.now()
+    };
+    saveUserStatuses();
+  }
+
   const dot = document.getElementById("statusDot");
   if (!dot) return;
 
@@ -89,6 +113,32 @@ function applyStatus(status) {
   dot.className =
     `absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-black ${colors[status]}`;
 }
+
+// =============================================================
+// DOT TO USERNAME
+// =============================================================
+
+
+function renderUserStatus(username) {
+  const info = userStatuses[username];
+  if (!info) return "";
+
+  const colors = {
+    online: "bg-green-500",
+    away: "bg-yellow-400",
+    dnd: "bg-red-600",
+    offline: "bg-gray-500"
+  };
+
+  return `
+    <span
+      class="inline-block w-2 h-2 rounded-full ml-1 ${colors[info.status]}"
+      title="${info.status}"
+    ></span>
+  `;
+}
+
+
 
 // =============================================================
 // MARKDOWN
@@ -148,8 +198,13 @@ function closeComposer() {
 }
 
 function submitInlinePost() {
-  const title = inlineTitle.value.trim();
-  const raw = inlineContent.value.trim();
+  const titleField = document.getElementById("inlineTitle");
+  const contentField = document.getElementById("inlineContent");
+
+  if (!titleField || !contentField) return;
+
+  const title = titleField.value.trim();
+  const raw = contentField.value.trim();
   if (!title || !raw) return;
 
   posts.unshift({
@@ -164,9 +219,32 @@ function submitInlinePost() {
   });
 
   savePosts();
+
+  titleField.value = "";
+  contentField.value = "";
+
   closeComposer();
   renderPosts();
 }
+
+// =============================================================
+// FILTERING (HOME ONLY)
+// =============================================================
+function getVisiblePosts() {
+  const filter = new URLSearchParams(location.search).get("filter");
+
+  if (filter === "myposts") {
+    return posts.filter(p => p.author === currentUser);
+  }
+
+  if (filter === "saved") {
+    return posts.filter(p => p.bookmarks.includes(currentUser));
+  }
+
+  return posts;
+}
+
+
 
 // =============================================================
 // NAV
@@ -229,9 +307,13 @@ function submitComment(postIndex, parentId = null) {
 function renderCommentTree(comments, postIndex, depth = 0) {
   return comments.map(c => `
     <div class="mt-3 ml-${depth * 4} border-l border-gray-700 pl-3">
-      <div class="text-xs text-gray-400">
-        m/${c.author} • ${formatTime(c.time)}
-      </div>
+      <div class="text-xs text-gray-400 flex items-center gap-1">
+  m/${c.author}
+  ${renderUserStatus(c.author)}
+  • ${formatTime(c.time)}
+</div>
+
+
 
       <div class="text-sm prose prose-invert">
         ${c.content}
@@ -279,10 +361,12 @@ function renderPosts() {
       <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
         <div onclick="clickPost('${p.id}')" class="cursor-pointer">
           <div class="font-bold text-xl">${p.title}</div>
-          <div class="text-xs text-gray-400">
-            m/${p.author} • ${formatTime(p.time)}
-          </div>
-        </div>
+<div class="text-xs text-gray-400 flex items-center gap-1">
+  m/${p.author}
+  ${renderUserStatus(p.author)}
+  • ${formatTime(p.time)}
+</div>
+
 
         <div class="mt-2 text-sm text-gray-200">
           ${getPreview(p.content)}
@@ -321,27 +405,39 @@ function renderSinglePost() {
 
   const id = new URLSearchParams(location.search).get("id");
   const post = posts.find(p => p.id === id);
-  if (!post) return;
+
+  if (!post) {
+    feed.innerHTML = "<p class='text-gray-400'>post not found</p>";
+    return;
+  }
 
   const index = posts.indexOf(post);
 
   feed.innerHTML = `
     <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
       <div class="font-bold text-2xl">${post.title}</div>
-      <div class="text-xs text-gray-400 mb-4">
-        m/${post.author} • ${formatTime(post.time)}
-      </div>
+    <div class="text-xs text-gray-400 mb-4 flex items-center gap-1">
+  m/${post.author}
+  ${renderUserStatus(post.author)}
+  • ${formatTime(post.time)}
+</div>
+
 
       <div class="prose prose-invert mb-6">
         ${post.content}
       </div>
 
       <div class="border-t border-gray-700 pt-4">
-        <div class="font-semibold mb-2">
-          comments (${countComments(post.comments)})
-        </div>
+        <div class="font-semibold mb-2">comments</div>
 
-        ${renderCommentTree(post.comments, index)}
+        ${post.comments.map(c => `
+          <div class="mb-3">
+            <div class="text-xs text-gray-400">
+              m/${c.author} • ${formatTime(c.time)}
+            </div>
+            <div class="text-sm">${c.content}</div>
+          </div>
+        `).join("")}
 
         <textarea
           id="commentField"
@@ -359,11 +455,23 @@ function renderSinglePost() {
     </div>
   `;
 }
-
 // =============================================================
 // BOOT
 // =============================================================
 document.addEventListener("DOMContentLoaded", () => {
+  // apply saved status to left dot on load
   applyStatus(localStorage.getItem("milkkit_status") || "online");
+
+  // wire status menu → left dot
+  document
+    .querySelectorAll("#statusMenu button[data-status]")
+    .forEach(btn => {
+      btn.addEventListener("click", () => {
+        applyStatus(btn.dataset.status);
+        document.getElementById("statusMenu")?.classList.add("hidden");
+      });
+    });
+
   IS_SINGLE_POST ? renderSinglePost() : renderPosts();
 });
+
