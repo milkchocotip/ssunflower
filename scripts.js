@@ -32,6 +32,38 @@ function uid() {
 }
 
 // =============================================================
+// ICONS (SVG — RESTORED)
+// =============================================================
+const icons = {
+  like: `
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5"
+      fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+      <path stroke-linecap="round" stroke-linejoin="round"
+        d="M5 15l7-7 7 7"/>
+    </svg>`,
+
+  bookmark: `
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5"
+      fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+      <path stroke-linecap="round" stroke-linejoin="round"
+        d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/>
+    </svg>`,
+
+  bookmarkFilled: `
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5"
+      viewBox="0 0 24 24" fill="currentColor">
+      <path d="M6 2a2 2 0 00-2 2v18l8-5 8 5V4a2 2 0 00-2-2H6z"/>
+    </svg>`,
+
+  share: `
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5"
+      fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+      <path stroke-linecap="round" stroke-linejoin="round"
+        d="M15 8l4-4m0 0l-4-4m4 4H9"/>
+    </svg>`
+};
+
+// =============================================================
 // STATUS
 // =============================================================
 function applyStatus(status) {
@@ -47,7 +79,8 @@ function applyStatus(status) {
     offline: "bg-gray-500"
   };
 
-  dot.className = `absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-black ${colors[status]}`;
+  dot.className =
+    `absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-black ${colors[status]}`;
 }
 
 // =============================================================
@@ -201,12 +234,18 @@ function renderPosts() {
         </div>
 
         <div class="flex justify-between text-gray-400 mt-3">
-          <button onclick="toggleLike(${i})">▲ ${p.likes.length}</button>
-          <button onclick="toggleBookmark(${i})">
-            ${p.bookmarks.includes(currentUser) ? "★" : "☆"}
+          <button onclick="toggleLike(${i})" class="flex items-center gap-1">
+            ${icons.like} ${p.likes.length}
           </button>
+
+          <button onclick="toggleBookmark(${i})">
+            ${p.bookmarks.includes(currentUser)
+              ? icons.bookmarkFilled
+              : icons.bookmark}
+          </button>
+
           <button onclick="navigator.clipboard.writeText('${location.origin}/post.html?id=${p.id}')">
-            share
+            ${icons.share}
           </button>
         </div>
       </div>
