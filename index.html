@@ -263,7 +263,7 @@
       $('buttonRow').innerHTML = `
         <div class="form">
           <input type="text" id="firstName" placeholder="first name" autocomplete="given-name" />
-          <input type="text" id="birthday" />
+          <input type="text" id="birthday" placeholder="mm/dd/yy" input="date" />
           <button onclick="submitForm()">submit</button>
         </div>
       `;
@@ -277,7 +277,7 @@
       const bday = bdayRaw.trim();
 
       const validName = name === 'sidney';
-      const validBday = bday === '9/20/02';
+      const validBday = bday === '09/20/02';
 
       if (!validName || !validBday) {
         $('question').textContent = 'try again.';
