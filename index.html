@@ -3,146 +3,438 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MILKKIT Login</title>
-
+  <title>Hello!</title>
   <style>
-    * { box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+    }
 
     body {
-      background: #000;
-      color: white;
-      font-family: "Inter", sans-serif;
+      background: radial-gradient(circle at center, #ff6fb7 0%, #ff4fa3 45%, #e83c90 100%);
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-      padding: 1rem; /* mobile-safe padding */
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
-    .card {
-      background: linear-gradient(145deg, #0d0d0d, #151515);
-      padding: 2rem; /* reduced for mobile */
-      border-radius: 1.25rem;
-      width: 100%;
-      max-width: 380px;
+    .gate {
+      width: min(560px, calc(100vw - 48px));
+      background: rgba(0,0,0,0.35);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 20px;
+      padding: 40px 48px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+      animation: fadeIn 1.2s ease forwards;
+    }
+
+    .question {
+      color: #fff;
+      font-size: 1.6rem;
+      letter-spacing: 0.08em;
+      text-transform: lowercase;
+      margin-bottom: 28px;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+    }
+
+    .form {
       display: flex;
       flex-direction: column;
-      gap: 1.3rem;
-      box-shadow: 0 0 25px rgba(255,255,255,0.06),
-                  inset 0 0 15px rgba(255,255,255,0.04);
-      border: 1px solid #222;
+      gap: 16px;
+      margin-top: 12px;
     }
 
-    h1 {
-      text-align: center;
-      font-size: 1.7rem;
-      margin-bottom: 0.25rem;
+    .form input {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.4);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: #fff;
+      font-size: 0.95rem;
+      letter-spacing: 0.05em;
     }
 
-    /* Prevent iOS zoom */
-    input, button {
-      font-size: 16px;
+    .form input::placeholder {
+      color: rgba(255,255,255,0.6);
     }
 
-    input {
-      width: 100%;
-      padding: 1.05rem;
-      border-radius: 0.65rem;
-      background: #1b1b1b;
-      color: white;
+    .form input:focus {
       outline: none;
-      border: 1px solid #2a2a2a;
+      border-color: #fff;
+      background: rgba(255,255,255,0.15);
     }
 
-    input:focus {
-      background: #222;
-      border-color: #444;
-      box-shadow: 0 0 10px rgba(255,255,255,0.1);
-    }
-
-    .password-wrap {
-      position: relative;
+    .loader-wrap {
       width: 100%;
+      margin-top: 12px;
     }
 
-    .password-wrap input {
-      padding-right: 3rem;
+    .loader {
+      width: 100%;
+      height: 6px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 999px;
+      overflow: hidden;
     }
 
-    .eye {
-      position: absolute;
-      right: 0.65rem;
-      top: 50%;
-      transform: translateY(-50%);
-      background: none;
-      border: none;
-      color: #aaa;
-      cursor: pointer;
-      font-size: 1.25rem;
-      padding: 0;
-      width: 1.4rem;
-      height: 1.4rem;
+    .loader-bar {
+      width: 0%;
+      height: 100%;
+      background: rgba(255,255,255,0.85);
+      transition: width 5s linear;
+    }
+
+    .embed {
+      width: 100%;
       display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      margin-top: 8px;
+      position: relative;
+    }
+
+    /* Blur only the spotify/player area (not the overlay) */
+    .embed.dim > iframe,
+    .embed.dim > .choices {
+      filter: blur(6px);
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .choices {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: none; /* toggled in JS */
       align-items: center;
       justify-content: center;
+      border-radius: 16px;
+      z-index: 5;
+    }
+
+    .confirm {
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      padding: 28px 32px;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      color: #fff;
+      opacity: 0.95;
     }
 
     button {
-      width: 100%;
-      padding: 1.05rem;
-      border-radius: 0.65rem;
-      font-weight: 600;
+      background: transparent;
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.6);
+      padding: 10px 26px;
+      border-radius: 999px;
+      font-size: 0.95rem;
+      letter-spacing: 0.12em;
       cursor: pointer;
-      border: none;
-      transition: 0.2s;
+      transition: all 0.25s ease;
     }
 
-    .primary { background: white; color: black; }
-    .secondary { background: #2b2b2b; color: white; }
+    button:hover {
+      background: rgba(255,255,255,0.15);
+      border-color: #fff;
+      transform: translateY(-1px);
+    }
 
+    button:active {
+      transform: translateY(0);
+      opacity: 0.85;
+    }
+
+    button.disabled {
+      opacity: 0.35;
+      cursor: default;
+      pointer-events: none;
+      border-color: rgba(255,255,255,0.25);
+    }
+
+    .glow {
+      box-shadow: 0 0 0 rgba(255,255,255,0);
+      animation: softGlow 2.2s ease-in-out infinite;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes softGlow {
+      0%   { box-shadow: 0 0 0 rgba(255,255,255,0); }
+      50%  { box-shadow: 0 0 12px rgba(255,255,255,0.45); }
+      100% { box-shadow: 0 0 0 rgba(255,255,255,0); }
+    }
   </style>
 </head>
-
 <body>
-  <div id="loginPage" class="card">
-    <h1>✦ login ✦</h1>
-
-    <input id="username" placeholder="username" />
-
-    <div class="password-wrap">
-      <input id="password" type="password" placeholder="password" />
-      <button type="button" class="eye" onclick="togglePassword('password', this)">👁</button>
+  <div class="gate" id="gate">
+    <div id="question" class="question">are you 18+</div>
+    <div id="message" class="question" style="display:none; opacity:0.9;">
+      you liar.<br/>click the right one.
     </div>
 
-    <button class="primary" onclick="login()">enter</button>
-    <button class="secondary" onclick="window.location.href='create.html'">create account</button>
+    <div class="buttons" id="buttonRow">
+      <button id="yesBtn" class="glow" onclick="handleYes()">yes</button>
+      <button id="noBtn" onclick="handleNo()">no</button>
+    </div>
   </div>
 
   <script>
-    function togglePassword(id, el) {
-      const input = document.getElementById(id);
-      const isHidden = input.type === "password";
-      input.type = isHidden ? "text" : "password";
-      el.textContent = isHidden ? "🙈" : "👁";
-      el.style.opacity = isHidden ? "1" : "0.6";
+    const STORAGE_KEY = 'pinkGateAccess';
+
+    // ---- utilities
+    function $(id) { return document.getElementById(id); }
+
+    // Restore state if previously saved
+    window.addEventListener('DOMContentLoaded', () => {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+      if (saved && saved.allowed) {
+        $('question').textContent = 'welcome back.';
+        $('message').style.display = 'none';
+        $('buttonRow').innerHTML = '<button class="glow" onclick="nextStep()">continue</button>';
+      }
+
+      // Optional: run tests with ?test=1
+      if (new URLSearchParams(location.search).get('test') === '1') {
+        runTests();
+      }
+    });
+
+    // Global reset with "r"
+    window.addEventListener('keydown', (e) => {
+      if (e.key && e.key.toLowerCase() === 'r') hardReset();
+    });
+
+    // ---- flow
+    function handleNo() {
+      $('question').style.display = 'none';
+      $('message').style.display = 'block';
+
+      $('buttonRow').innerHTML = '<button onclick="resetGate()">okay</button>';
     }
 
-    function login() {
-      const user = document.getElementById("username").value.trim();
-      const pass = document.getElementById("password").value;
+    function resetGate() {
+      $('message').style.display = 'none';
+      $('question').style.display = 'block';
+      $('question').style.marginBottom = '28px';
+      $('question').textContent = 'are you 18+';
 
-      const accounts = JSON.parse(localStorage.getItem("accounts") || "{}");
+      $('buttonRow').innerHTML = '<button class="glow" onclick="handleYes()">yes</button><button class="disabled">no</button>';
+    }
 
-      if (accounts[user] === pass) {
+    function handleYes() {
+      $('question').style.display = 'block';
+      $('message').style.display = 'none';
+      $('question').style.marginBottom = '28px';
+      $('question').textContent = 'good.';
 
-        // REQUIRED or home.html redirects back
-        localStorage.setItem("milkkit_user", user);
+      $('buttonRow').innerHTML = '<button onclick="nextStep()">now what?</button>';
+    }
 
-        window.location.href = "home.html";
-      } else {
-        alert("invalid login");
+    function nextStep() {
+      $('question').innerHTML = 'enter your first name<br/>and your birthday <span style="font-size:0.9rem; opacity:0.8;">(m/dd/yy)</span>';
+
+      $('buttonRow').innerHTML = `
+        <div class="form">
+          <input type="text" id="firstName" placeholder="first name" autocomplete="given-name" />
+          <input type="text" id="birthday" placeholder="m/dd/yy" inputmode="numeric" />
+          <button onclick="submitForm()">submit</button>
+        </div>
+      `;
+    }
+
+    function submitForm() {
+      const nameRaw = $('firstName')?.value || '';
+      const bdayRaw = $('birthday')?.value || '';
+
+      const name = nameRaw.trim().toLowerCase();
+      const bday = bdayRaw.trim();
+
+      const validName = name === 'sidney';
+      const validBday = bday === '9/20/02';
+
+      if (!validName || !validBday) {
+        $('question').textContent = 'try again.';
+        $('question').style.opacity = '0.9';
+        return;
       }
+
+      // Save to localStorage
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        allowed: true,
+        name,
+        birthday: bday,
+        at: Date.now()
+      }));
+
+      $('question').style.opacity = '1';
+      $('question').textContent = 'thank you.';
+      $('buttonRow').innerHTML = '<button class="glow" onclick="startLoading()">what was that for?</button>';
+    }
+
+    function startLoading() {
+      $('question').textContent = 'processing.';
+
+      $('buttonRow').innerHTML = `
+        <div class="loader-wrap">
+          <div class="loader">
+            <div class="loader-bar" id="loaderBar"></div>
+          </div>
+        </div>
+      `;
+
+      // Force reflow so transition triggers
+      const bar = $('loaderBar');
+      if (bar) {
+        void bar.offsetHeight;
+        bar.style.width = '100%';
+      }
+
+      setTimeout(() => {
+        $('question').textContent = '';
+        $('question').style.marginBottom = '0';
+        $('buttonRow').innerHTML = '<button class="glow" onclick="showSpotify()">find out</button>';
+      }, 5000);
+    }
+
+    function showSpotify() {
+      $('question').textContent = '';
+      $('question').style.marginBottom = '0';
+
+      $('buttonRow').innerHTML = `
+        <div class="embed" id="embed">
+          <iframe data-testid="embed-iframe" style="border-radius:12px" src="https://open.spotify.com/embed/playlist/7CvEqMY550A7Ys1wxsmdNQ?utm_source=generator" width="100%" height="352" frameborder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+
+          <div class="choices">
+            <button class="glow" onclick="spotifyYes()">yes</button>
+            <button onclick="confirmNo()">no</button>
+          </div>
+
+          <div id="overlay" class="overlay" role="dialog" aria-modal="true" aria-label="confirmation">
+            <div class="confirm">
+              <div>are you sure?</div>
+              <div class="buttons">
+                <button class="glow" onclick="confirmYes()">yes</button>
+                <button onclick="confirmCancel()">no</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Spotify choice handlers ("yes" is currently a placeholder)
+    function spotifyYes() {
+      // Positive end state — keep the pink background
+      document.body.innerHTML = `
+        <div style="
+          width:100%;
+          height:100%;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        ">
+          <div style="color:white; text-align:center;">
+            <div style="font-size:2rem; letter-spacing:0.12em; margin-bottom:16px;">YAY! HIIII</div>
+            <div style="font-size:1.4rem; letter-spacing:0.1em;">TEXT ME :)</div>
+          </div>
+        </div>
+      `;
+    }
+
+    // ---- confirmation modal
+    function confirmNo() {
+      const overlay = $('overlay');
+      const embed = $('embed');
+      if (overlay && embed) {
+        overlay.style.display = 'flex';
+        embed.classList.add('dim');
+      }
+    }
+
+    function confirmCancel() {
+      const overlay = $('overlay');
+      const embed = $('embed');
+      if (overlay && embed) {
+        overlay.style.display = 'none';
+        embed.classList.remove('dim');
+      }
+    }
+
+    function confirmYes() {
+      // End state
+      document.body.style.background = '#000';
+      document.body.innerHTML = '<div style="color:white;font-size:1.6rem;letter-spacing:0.08em;">i understand.</div>';
+    }
+
+    function hardReset() {
+      localStorage.removeItem(STORAGE_KEY);
+      location.reload();
+    }
+
+    // ---- lightweight tests (run with ?test=1)
+    function assert(cond, msg) {
+      if (!cond) throw new Error('Test failed: ' + msg);
+    }
+
+    function runTests() {
+      console.log('[tests] starting');
+      assert(!!$('gate'), 'gate exists');
+      assert(!!$('question'), 'question exists');
+      assert(!!$('buttonRow'), 'buttonRow exists');
+
+      // reset key flow
+      handleNo();
+      assert($('message').style.display === 'block', 'liar message shows');
+      resetGate();
+      assert($('question').textContent.toLowerCase().includes('are you 18'), 'reset returns to age gate');
+
+      // happy path to form
+      handleYes();
+      nextStep();
+      assert(!!$('firstName') && !!$('birthday'), 'inputs render');
+
+      // invalid submit
+      $('firstName').value = 'nope';
+      $('birthday').value = '1/1/11';
+      submitForm();
+      assert($('question').textContent === 'try again.', 'invalid shows try again');
+
+      // valid submit
+      nextStep();
+      $('firstName').value = 'SIDNEY';
+      $('birthday').value = '9/20/02';
+      submitForm();
+      assert($('question').textContent === 'thank you.', 'valid shows thank you');
+
+      console.log('[tests] passed');
     }
   </script>
 </body>
